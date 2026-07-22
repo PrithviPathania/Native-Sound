@@ -1,0 +1,221 @@
+<!DOCTYPE html><html lang="en" class="dark" style=""><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline": "#8c90a1",
+                      "on-error": "#690005",
+                      "tertiary": "#77da9f",
+                      "on-tertiary-fixed": "#002110",
+                      "surface-dim": "#10131b",
+                      "on-surface": "#e1e2ee",
+                      "on-primary-container": "#ffffff",
+                      "error": "#ffb4ab",
+                      "on-tertiary-fixed-variant": "#00522f",
+                      "surface-container-highest": "#32343e",
+                      "secondary-fixed": "#e4e2e1",
+                      "on-background": "#e1e2ee",
+                      "surface-tint": "#b1c5ff",
+                      "on-tertiary": "#00391f",
+                      "surface": "#10131b",
+                      "tertiary-fixed": "#93f7ba",
+                      "tertiary-container": "#198754",
+                      "surface-bright": "#363942",
+                      "secondary": "#c8c6c5",
+                      "primary-container": "#0d6efd",
+                      "on-primary": "#002c70",
+                      "surface-container": "#1d1f28",
+                      "inverse-on-surface": "#2d3039",
+                      "on-secondary-container": "#b6b5b4",
+                      "inverse-primary": "#0057ce",
+                      "on-primary-fixed": "#001946",
+                      "on-error-container": "#ffdad6",
+                      "on-secondary-fixed": "#1b1c1c",
+                      "on-surface-variant": "#c2c6d8",
+                      "surface-variant": "#32343e",
+                      "on-primary-fixed-variant": "#00419e",
+                      "tertiary-fixed-dim": "#77da9f",
+                      "primary-fixed-dim": "#b1c5ff",
+                      "primary": "#b1c5ff",
+                      "on-secondary": "#303030",
+                      "secondary-fixed-dim": "#c8c6c5",
+                      "on-tertiary-container": "#ffffff",
+                      "background": "#10131b",
+                      "on-secondary-fixed-variant": "#474747",
+                      "surface-container-high": "#272a33",
+                      "secondary-container": "#474747",
+                      "inverse-surface": "#e1e2ee",
+                      "primary-fixed": "#dae2ff",
+                      "surface-container-lowest": "#0b0e16",
+                      "error-container": "#93000a",
+                      "surface-container-low": "#191b24",
+                      "outline-variant": "#424655"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xs": "4px",
+                      "xl": "32px",
+                      "md": "16px",
+                      "gutter": "12px",
+                      "edge-margin": "16px",
+                      "sm": "8px",
+                      "lg": "24px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "label-xs": ["Inter"],
+                      "label-md": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "title-md": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "display-sm": ["Inter"],
+                      "headline-lg-mobile": ["Inter"]
+              },
+              "fontSize": {
+                      "label-xs": ["10px", {"lineHeight": "12px", "fontWeight": "700"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "title-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                      "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "display-sm": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-lg-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+      }catch(_e){}</script><meta charset="utf-8"></head><body class="bg-background text-on-background font-body-lg overflow-hidden h-screen flex flex-col">
+<!-- Top Bar -->
+<header class="flex justify-between items-center px-edge-margin h-14 w-full z-10">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors active:opacity-80">
+<span class="material-symbols-outlined rotate-90 text-on-surface">expand_more</span>
+</button>
+<div class="flex flex-col items-center">
+
+<span class="font-label-md text-label-md text-on-surface-variant">Now Playing</span>
+</div>
+
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col px-edge-margin pb-xl relative overflow-hidden">
+<!-- Ambient Blur Background -->
+<div class="absolute inset-0 blur-gradient -z-10 opacity-40"></div>
+<!-- Center Stage: Album Art -->
+<div class="flex-1 flex items-center justify-center py-lg">
+<div class="w-full aspect-square max-w-[340px] relative">
+<div class="absolute inset-0 bg-primary-container/20 blur-xl rounded-xl translate-y-4"></div>
+<div class="relative w-full h-full rounded-xl overflow-hidden shadow-2xl border border-outline-variant/30">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDiQ3mNs77P-Kscrrwm5ExdxU1NpKWrmXe4MzsQCB5QOvL1wpxHSL5uhMVkgNFcaJnkClkoRhnjT-i1TqWLdCjM3-ZvgIf-rm0RPfAXLugc5czhZZCRrZxT56EH9voIxVCJdov2aN6Fs9jjCxI2lCGUFqaE1FT5jpQEnnc3jZsSgNaIYGOol0BB1clYJWSgpKH21hzpyLfoStIsGoWT_oUS81LDzXu1e27HoAfGceLLSFCQJ8RUI4kdX60Vv9eaMGiqQsjwZ84oh4KL" alt="Cover Image">
+</div>
+</div>
+</div>
+<!-- Track Info -->
+<div class="flex justify-between items-end mb-lg">
+<div class="flex flex-col gap-1 overflow-hidden">
+<h1 class="font-display-sm text-display-sm text-on-primary-container truncate leading-tight">Song Name</h1>
+<p class="font-title-md text-title-md text-on-surface-variant truncate">Artist Name</p>
+</div>
+<button class="p-2 transition-transform active:scale-90" id="like-btn" onclick="toggleLike()">
+<span class="material-symbols-outlined text-primary-container text-[28px]" id="heart-icon" style="font-variation-settings: &quot;FILL&quot; 1;">favorite</span>
+</button>
+</div>
+<!-- Progress Section -->
+<div class="flex flex-col gap-2 mb-xl">
+<div class="relative w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="absolute top-0 left-0 h-full bg-primary-container w-[36%]"></div>
+</div>
+<!-- Interactive Slider Overlay -->
+<input class="progress-slider absolute w-[calc(100%-32px)] h-1 opacity-0 cursor-pointer" max="100" min="0" type="range" value="36">
+<div class="flex justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant">01:24</span>
+<span class="font-label-md text-label-md text-on-surface-variant">03:45</span>
+</div>
+</div>
+<!-- Controls Row -->
+<div class="flex justify-between items-center mb-xl px-2">
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[24px]">shuffle</span>
+</button>
+<div class="flex items-center gap-lg">
+<button class="text-on-surface hover:text-primary transition-colors active:scale-95">
+<span class="material-symbols-outlined text-[40px]" style="font-variation-settings: &quot;FILL&quot; 1;">skip_previous</span>
+</button>
+<button class="w-20 h-20 bg-primary-container text-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform" id="play-pause-btn" onclick="togglePlay()">
+<span class="material-symbols-outlined text-[48px]" id="play-icon" style="font-variation-settings: &quot;FILL&quot; 1;">pause</span>
+</button>
+<button class="text-on-surface hover:text-primary transition-colors active:scale-95">
+<span class="material-symbols-outlined text-[40px]" style="font-variation-settings: &quot;FILL&quot; 1;">skip_next</span>
+</button>
+</div>
+<button class="text-primary-container transition-colors">
+<span class="material-symbols-outlined text-[24px]">repeat</span>
+</button>
+</div>
+<!-- Volume Section -->
+<div class="flex items-center gap-md px-4 h-10">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">volume_mute</span>
+<div class="flex-1 relative flex items-center">
+<div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden relative">
+<div class="absolute top-0 left-0 h-full bg-on-surface-variant w-[65%]"></div>
+</div>
+<input class="volume-slider absolute inset-0 w-full bg-transparent appearance-none" max="100" min="0" type="range" value="65">
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">volume_up</span>
+</div>
+</main>
+<!-- Visualizer Background Animation (Simulated) -->
+
+<script>
+        let isPlaying = true;
+        let isLiked = true;
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const icon = document.getElementById('play-icon');
+            icon.textContent = isPlaying ? 'pause' : 'play_arrow';
+            
+            // Interaction effect
+            const btn = document.getElementById('play-pause-btn');
+            btn.classList.add('scale-95');
+            setTimeout(() => btn.classList.remove('scale-95'), 100);
+        }
+
+        function toggleLike() {
+            isLiked = !isLiked;
+            const icon = document.getElementById('heart-icon');
+            if (isLiked) {
+                icon.textContent = 'favorite';
+                icon.classList.replace('text-on-surface-variant', 'text-primary-container');
+                icon.style.fontVariationSettings = "'FILL' 1";
+            } else {
+                icon.textContent = 'favorite';
+                icon.classList.replace('text-primary-container', 'text-on-surface-variant');
+                icon.style.fontVariationSettings = "'FILL' 0";
+            }
+        }
+
+        // Simple touch feedback for progress bar
+        const progressSlider = document.querySelector('.progress-slider');
+        progressSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            const bar = e.target.previousElementSibling.firstElementChild;
+            bar.style.width = val + '%';
+        });
+
+        // Volume slider sync
+        const volumeSlider = document.querySelector('.volume-slider');
+        volumeSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            const bar = e.target.previousElementSibling.firstElementChild;
+            bar.style.width = val + '%';
+        });
+    </script>
+
+</body></html>
