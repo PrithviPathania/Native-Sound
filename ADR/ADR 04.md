@@ -1,18 +1,9 @@
-**
+Title: ADR 04: Database Storage 
 
-Title: ADR 04: Database Storage 
+Status: Proposed 
 
-Status: Proposed
+Context: The app needs an offline, local (unencrypted) storage strategy to remember where imported MP3 files are saved on the phone, their song details, liked status, and playback state like song position. 
 
-Context: The app needs an offline way to remember where imported MP3 files are saved on the phone, their song details, and whether a user has "liked" them. 
+Decision: We will use local unencrypted storage with Expo SQLite to create and manage the song database, alongside AsyncStorage to persist simple key-value state like active track ID and timestamp. 
 
-Decision: We will use Expo SQLite to create and manage a local database directly on the phone. 
-
-Consequences: It becomes very easy to instantly update the UI (like viewing the Liked Library) by asking the local database to filter and show specific songs, running with zero internet dependence
-
-  
-  
-  
-  
-  
-**
+Consequences: Structured querying remains fast and organized without forcing continuous database writes during playback, allowing instant UI updates and seamless playback restoration with no remote server or encryption. 

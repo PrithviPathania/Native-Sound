@@ -1,13 +1,9 @@
-**  
+Title: ADR 02: Navigation Strategy 
 
-Title: ADR 02: Navigation Strategy 
+Status: Proposed 
 
-Status: Proposed
+Context: We need a way to navigate from the main library page into sub-pages (like Liked Library and Upload) using stack navigation with back buttons, while always keeping a music mini player accessible without UI glitching or re-rendering during transitions. 
 
-Context: We need a way to navigate between the Library, Liked Library, and Upload pages while keeping a music player accessible at all times.
+Decision: We will use Expo Router for standard stack navigation, mounting the mini-player component directly inside the persistent Root Layout wrapper (app/_layout.tsx) beneath the <Stack/>, and opening the full-screen player as a global Modal route. 
 
- Decision: We will use Expo Router for standard stack navigation. The music mini-player will be a reusable component placed at the bottom of every page, and the full-screen player will open as a popup (Modal). 
-
-Consequences: The file structure becomes much simpler to build and manage. However, it means the mini-player will animate during screen transitions instead of staying perfectly static at the bottom.
-
-**
+Consequences: The mini-player stays perfectly static at the bottom of the screen while sub-pages slide in and out above it, keeping global playback active across all screens and eliminating transition animation glitches. 
