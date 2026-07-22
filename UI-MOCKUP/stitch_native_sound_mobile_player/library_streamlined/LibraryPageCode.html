@@ -131,12 +131,12 @@
     }
   </style>
 </head>
-<body class="flex flex-col h-screen overflow-hidden"><header class="pt-12 px-edge-margin pb-6 bg-gradient-to-b from-primary-container/10 to-surface"><h1 class="font-display-sm text-display-sm text-on-surface mb-1">Library</h1><p class="font-body-sm text-body-sm text-on-surface-variant mb-2">452 Songs</p><a class="text-primary font-label-md flex items-center gap-1 hover:underline" href="#">View Liked Songs <span class="material-symbols-outlined text-sm">arrow_forward</span></a></header>
+<body class="flex flex-col h-screen overflow-hidden"><header class="pt-12 px-edge-margin pb-6 bg-gradient-to-b from-primary-container/10 to-surface"><h1 class="font-display-sm text-display-sm text-on-surface mb-1">Library</h1><p class="font-body-sm text-body-sm text-on-surface-variant mb-2">452 Songs</p><a class="text-primary font-label-md flex items-center gap-1 hover:underline" href="../liked_songs_resized_blue_icons/LikedSongsCode.html">View Liked Songs <span class="material-symbols-outlined text-sm">arrow_forward</span></a></header>
 <!-- Top Header Component (Based on Shared Components JSON) -->
 <!-- Sub-header: Search and Toggle -->
 <!-- Main Content: Scrollable Track List -->
 <div class="flex gap-gutter px-edge-margin mb-8"><button class="flex-1 h-12 bg-primary-container text-on-primary rounded-lg font-title-md text-title-md flex items-center justify-center gap-2 active:scale-95 transition-transform"><span class="material-symbols-outlined fill-current" style="font-variation-settings: 'FILL' 1;">play_arrow</span>Play All</button><button class="flex-1 h-12 border border-outline text-on-surface rounded-lg font-title-md text-title-md flex items-center justify-center gap-2 active:scale-95 transition-transform hover:bg-surface-variant/20"><span class="material-symbols-outlined">shuffle</span>Shuffle</button></div><main class="flex-1 overflow-y-auto custom-scrollbar px-edge-margin pb-32">
-<div class="space-y-sm mt-md"><div class="bg-surface-container-low border border-outline-variant/30 p-md rounded-xl mb-md flex items-center justify-between"><div class="flex items-center gap-md"><div><p class="font-label-md text-on-surface">Local Storage</p></div></div><button class="bg-surface-variant text-on-surface px-md py-1 rounded-full font-label-md">Import</button></div>
+<div class="space-y-sm mt-md"><div class="bg-surface-container-low border border-outline-variant/30 p-md rounded-xl mb-md flex items-center justify-between"><div class="flex items-center gap-md"><div><p class="font-label-md text-on-surface">Local Storage</p></div></div><a href="../import_music_standardized/ImportPageCode.html" class="bg-surface-variant text-on-surface px-md py-1 rounded-full font-label-md inline-flex items-center justify-center hover:opacity-80 transition-opacity">Import</a></div>
 <!-- Track Item 1 (Active/Playing) -->
 <div class="flex items-center gap-md p-sm rounded-lg hover:bg-surface-variant/30 transition-colors duration-100 group">
 <div class="relative w-12 h-12 flex-shrink-0">
@@ -206,7 +206,32 @@
 </div>
 </main>
 <!-- Mini-player Component (Persistent at bottom, above nav) -->
-<footer class="fixed bottom-0 left-0 right-0 h-16 bg-surface-container-high border-t border-outline-variant/30 flex flex-col z-50"><div class="w-full h-[2px] bg-outline-variant relative"><div class="absolute top-0 left-0 h-full bg-primary-container" style="width: 45%;"></div></div><div class="flex items-center h-full px-edge-margin gap-md"><div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container-highest"><img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVnZeTgtIplw3qw0fteHuivnh8J2t7GQd66VnGEYs_X3JDlxR337qlHUbsEkOEo_Mv-sd71Bs-XzcokVcsZ9Oerk_xc8wRNEC4lOFKtbjByoM2uXw0iavhlbktOVyst0CVBYKjbodfl-KQRhO6LtHGFGtIJkhpd0XI_jFFpfO5ZaDaN_sXAuO_-biAgGeUgYm-bxHMobGEicDiEv6liVZrZVb85dRxwc2aCl8tOfnBPI6lm4EYh5UAlEZtfalj3bqHw9Oaq-HWFmDX"></div><div class="flex-1 min-w-0"><h4 class="font-label-md text-label-md text-on-surface font-semibold truncate">Neon Nights</h4><p class="font-label-xs text-label-xs text-on-surface-variant truncate">Nightshade Collective</p></div><div class="flex items-center gap-gutter"><button class="w-10 h-10 flex items-center justify-center text-on-surface"><span class="material-symbols-outlined">skip_previous</span></button><button class="w-10 h-10 flex items-center justify-center text-surface bg-on-surface rounded-full"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">pause</span></button><button class="w-10 h-10 flex items-center justify-center text-on-surface"><span class="material-symbols-outlined">skip_next</span></button></div></div></footer>
+<footer class="fixed bottom-0 left-0 right-0 h-16 bg-surface-container-high border-t border-outline-variant/30 flex flex-col z-50">
+    <div class="w-full h-[2px] bg-outline-variant relative">
+        <div class="absolute top-0 left-0 h-full bg-primary-container" style="width: 45%;"></div>
+    </div>
+    <div class="flex items-center justify-between h-full px-edge-margin gap-md">
+        
+        <!-- CLICKABLE SONG INFO LINK -->
+        <a href="../now_playing_modal_v2/MusicPlayerCode.html" class="flex items-center gap-md flex-1 min-w-0 hover:opacity-80 transition-opacity">
+            <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container-highest">
+                <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVnZeTgtIplw3qw0fteHuivnh8J2t7GQd66VnGEYs_X3JDlxR337qlHUbsEkOEo_Mv-sd71Bs-XzcokVcsZ9Oerk_xc8wRNEC4lOFKtbjByoM2uXw0iavhlbktOVyst0CVBYKjbodfl-KQRhO6LtHGFGtIJkhpd0XI_jFFpfO5ZaDaN_sXAuO_-biAgGeUgYm-bxHMobGEicDiEv6liVZrZVb85dRxwc2aCl8tOfnBPI6lm4EYh5UAlEZtfalj3bqHw9Oaq-HWFmDX">
+            </div>
+            <div class="flex-1 min-w-0">
+                <h4 class="font-label-md text-label-md text-on-surface font-semibold truncate">Neon Nights</h4>
+                <p class="font-label-xs text-label-xs text-on-surface-variant truncate">Nightshade Collective</p>
+            </div>
+        </a>
+
+        <!-- PLAYBACK CONTROLS -->
+        <div class="flex items-center gap-gutter flex-shrink-0">
+            <button class="w-10 h-10 flex items-center justify-center text-on-surface"><span class="material-symbols-outlined">skip_previous</span></button>
+            <button class="w-10 h-10 flex items-center justify-center text-surface bg-on-surface rounded-full"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">pause</span></button>
+            <button class="w-10 h-10 flex items-center justify-center text-on-surface"><span class="material-symbols-outlined">skip_next</span></button>
+        </div>
+
+    </div>
+</footer>
 <!-- Bottom Navigation Bar (Based on Shared Components JSON) -->
 <script>
         function toggleTab(type) {

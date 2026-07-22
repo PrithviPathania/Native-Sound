@@ -97,10 +97,10 @@
 <main class="w-[390px] h-[884px] bg-surface relative overflow-hidden flex flex-col shadow-2xl">
 <!-- Header / Top App Bar Section -->
 <header class="pt-12 px-edge-margin pb-6 z-10 bg-gradient-to-b from-primary-container/20 to-surface">
-<button class="flex items-center gap-2 mb-6 group">
-<span class="material-symbols-outlined text-on-surface transition-transform group-active:-translate-x-1" data-icon="arrow_back" data-original-icon="arrow_back">arrow_back</span>
-<span class="font-label-md text-label-md text-on-surface uppercase tracking-wider">Library</span>
-</button>
+<a href="../library_streamlined/LibraryPageCode.html" class="flex items-center gap-2 mb-6 group">
+    <span class="material-symbols-outlined text-on-surface transition-transform group-active:-translate-x-1" data-icon="arrow_back" data-original-icon="arrow_back">arrow_back</span>
+    <span class="font-label-md text-label-md text-on-surface uppercase tracking-wider">Library</span>
+</a>
 <div class="flex items-end gap-md">
 
 <div class="pb-2">
@@ -140,33 +140,42 @@
 </div>
 </section>
 <!-- Persistent Mini Player -->
-<footer class="absolute bottom-0 left-0 right-0 h-16 mini-player-blur border-t border-outline flex flex-col z-50"><!-- Mini Player Progress Bar -->
-<div class="w-full h-[2px] bg-outline relative">
-    <div class="absolute top-0 left-0 h-full bg-primary" style="width: 35%;"></div>
-</div>
-<div class="flex items-center h-full px-edge-margin gap-md">
-    <!-- Mini Thumbnail -->
-    <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container-highest">
-        <img class="w-full h-full object-cover" data-alt="A vibrant, glitch-art inspired digital illustration of a synthesizer keyboard" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBydUqszxe8-tvBXSY9Fu-GOnDK6WrybUKeUEIUu-hbxK-kyQhucwNEN8bCpW7cAOlwxmgmWjZBN5aNT-BqtnPUpH4ooAk3fi4Rk-Ex2qrHfBeCmhoq4bRplaSIWQpPZ6xRoO0ef5krHHx0sFGV3VPN3z2_ltr4L5mX_fGg5--ES1DthrtRP1wpqXHGD9K0J5E-DrWPh-ovI5ewT_jf41ZW-ooip_EQsotTVPiVrKozWipIMohSwUgxsgPQYvUZMyXCOB2RNJdG5vkr">
+<footer class="absolute bottom-0 left-0 right-0 h-16 mini-player-blur border-t border-outline flex flex-col z-50">
+    <!-- Mini Player Progress Bar -->
+    <div class="w-full h-[2px] bg-outline relative">
+        <div class="absolute top-0 left-0 h-full bg-primary" style="width: 35%;"></div>
     </div>
-    <!-- Track Info -->
-    <div class="flex-1 min-w-0">
-        <h4 class="font-label-md text-label-md text-on-surface font-semibold truncate">Neon Nights</h4>
-        <p class="font-label-xs text-label-xs text-on-surface-variant truncate">Synthwave Collective</p>
+    
+    <div class="flex items-center justify-between h-full px-edge-margin gap-md">
+        
+        <!-- CLICKABLE SONG INFO LINK -->
+        <a href="../now_playing_modal_v2/MusicPlayerCode.html" class="flex items-center gap-md flex-1 min-w-0 hover:opacity-80 transition-opacity">
+            <!-- Mini Thumbnail -->
+            <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container-highest">
+                <img class="w-full h-full object-cover" data-alt="A vibrant, glitch-art inspired digital illustration of a synthesizer keyboard" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBydUqszxe8-tvBXSY9Fu-GOnDK6WrybUKeUEIUu-hbxK-kyQhucwNEN8bCpW7cAOlwxmgmWjZBN5aNT-BqtnPUpH4ooAk3fi4Rk-Ex2qrHfBeCmhoq4bRplaSIWQpPZ6xRoO0ef5krHHx0sFGV3VPN3z2_ltr4L5mX_fGg5--ES1DthrtRP1wpqXHGD9K0J5E-DrWPh-ovI5ewT_jf41ZW-ooip_EQsotTVPiVrKozWipIMohSwUgxsgPQYvUZMyXCOB2RNJdG5vkr">
+            </div>
+            <!-- Track Info -->
+            <div class="flex-1 min-w-0">
+                <h4 class="font-label-md text-label-md text-on-surface font-semibold truncate">Neon Nights</h4>
+                <p class="font-label-xs text-label-xs text-on-surface-variant truncate">Synthwave Collective</p>
+            </div>
+        </a>
+
+        <!-- Controls (Separate from link) -->
+        <div class="flex items-center gap-gutter flex-shrink-0">
+            <button class="w-10 h-10 flex items-center justify-center text-on-surface active:scale-90 transition-transform">
+                <span class="material-symbols-outlined" data-icon="skip_previous">skip_previous</span>
+            </button>
+            <button class="w-10 h-10 flex items-center justify-center text-surface bg-on-surface rounded-full active:scale-90 transition-transform">
+                <span class="material-symbols-outlined" data-icon="pause" style="font-variation-settings: 'FILL' 1;">pause</span>
+            </button>
+            <button class="w-10 h-10 flex items-center justify-center text-on-surface active:scale-90 transition-transform">
+                <span class="material-symbols-outlined" data-icon="skip_next">skip_next</span>
+            </button>
+        </div>
+
     </div>
-    <!-- Controls -->
-    <div class="flex items-center gap-gutter">
-        <button class="w-10 h-10 flex items-center justify-center text-on-surface active:scale-90 transition-transform">
-            <span class="material-symbols-outlined" data-icon="skip_previous">skip_previous</span>
-        </button>
-        <button class="w-10 h-10 flex items-center justify-center text-surface bg-on-surface rounded-full active:scale-90 transition-transform">
-            <span class="material-symbols-outlined" data-icon="pause" style="font-variation-settings: 'FILL' 1;">pause</span>
-        </button>
-        <button class="w-10 h-10 flex items-center justify-center text-on-surface active:scale-90 transition-transform">
-            <span class="material-symbols-outlined" data-icon="skip_next">skip_next</span>
-        </button>
-    </div>
-</div></footer>
+</footer>
 </main>
 <script>
         // Simple micro-interaction for heart icons

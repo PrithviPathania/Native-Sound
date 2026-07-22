@@ -96,9 +96,8 @@
 <!-- TopAppBar -->
 <header class="bg-surface dark:bg-surface sticky top-0 w-full z-50 flex justify-between items-center px-4 h-16 transition-colors duration-200">
 <div class="flex items-center">
-<button aria-label="Back" class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant/50 p-2 -ml-2 rounded-full transition-colors duration-200">
-<span class="material-symbols-outlined" data-icon="arrow_back" data-original-icon="arrow_back">arrow_back</span>
-</button>
+<a href="../library_streamlined/LibraryPageCode.html" aria-label="Back" class="...">    <span class="material-symbols-outlined" data-icon="arrow_back" data-original-icon="arrow_back">arrow_back</span>
+</a>
 <h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary ml-2">Import to Native Sound</h1>
 </div>
 </header>
@@ -110,10 +109,11 @@
 </div>
 <h2 class="font-title-md text-title-md text-on-surface mb-xs">Select MP3's&nbsp;from Device</h2>
 
-<button class="bg-[#0d6efd] text-white font-title-md text-title-md rounded-lg py-sm px-lg w-full flex items-center justify-center gap-sm hover:bg-[#0b5ed7] transition-colors active:scale-95 shadow-md">
-<span class="material-symbols-outlined" data-icon="upload_file">upload_file</span>
-                Browse Local Storage
-            </button>
+<label class="bg-[#0d6efd] text-white font-title-md text-title-md rounded-lg py-sm px-lg w-full flex items-center justify-center gap-sm hover:bg-[#0b5ed7] transition-colors active:scale-95 shadow-md cursor-pointer">
+    <input type="file" class="hidden" accept=".mp3/*">
+    <span class="material-symbols-outlined" data-icon="upload_file">upload_file</span>
+    Browse Local Storage
+</label>
 <div class="mt-md text-left w-full border-t border-[#2c2c2c] pt-md">
 <div class="flex items-center justify-between">
 <span class="font-body-sm text-body-sm text-on-surface-variant">Storage available</span>
