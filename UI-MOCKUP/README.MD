@@ -5,6 +5,8 @@ Please start from library page when traversing as that’s our home page.
 
 For the input requirement, you can upload a MP3 into the import page (By selecting ‘browse local storage’ from ImportPageCode.html)
 
+NOTE DESIGN ARCHITECTURE IS IN 'UI-MOCKUP/stitch_native_sound_mobile_player/native_sound/DESIGN.md' (Not required for submission but good to have)
+
 - On library page
 'View Liked Songs ->' CTA redirects to liked page 'LikedSongsCode.html'
 'Import' CTA redirects import page 'ImportPageCode.html'
