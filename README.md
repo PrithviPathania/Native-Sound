@@ -1,4 +1,4 @@
-wORKING STATIC UI MOCKUP - https://prithvipathania.github.io/Native-Sound/UI-MOCKUP/stitch_native_sound_mobile_player/library_streamlined/LibraryPageCode.html
+WORKING STATIC UI MOCKUP - https://prithvipathania.github.io/Native-Sound/UI-MOCKUP/stitch_native_sound_mobile_player/library_streamlined/LibraryPageCode.html
 
 INSTRUCTIONS
 
