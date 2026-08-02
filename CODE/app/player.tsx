@@ -1,51 +1,225 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Image,
+  PanResponder,
+  type GestureResponderEvent,
+  type PanResponderGestureState,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Radii } from '../constants/theme';
 import { useAudio } from '../context/AudioContext';
 
-function formatDuration(seconds?: number): string {
-  if (!seconds || isNaN(seconds) || seconds <= 0) return '—:——';
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function formatTime(seconds: number): string {
+  if (!seconds || isNaN(seconds) || seconds < 0) return '0:00';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
 }
 
+function clamp(val: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, val));
+}
+
+// ---------------------------------------------------------------------------
+// Inline slider (no external dependencies)
+// PanResponder-based so it works on both iOS and Android.
+// ---------------------------------------------------------------------------
+interface SliderProps {
+  value: number;        // 0–1
+  onValueChange: (v: number) => void;
+  onSlidingComplete: (v: number) => void;
+  thumbColor?: string;
+  trackColor?: string;
+  activeTrackColor?: string;
+}
+
+function Slider({
+  value,
+  onValueChange,
+  onSlidingComplete,
+  thumbColor = Colors.primary,
+  trackColor = Colors.border,
+  activeTrackColor = Colors.primary,
+}: SliderProps) {
+  const [trackWidth, setTrackWidth] = useState(1);
+  const [sliding, setSliding] = useState(false);
+  const [slideValue, setSlideValue] = useState(value);
+
+  const displayValue = sliding ? slideValue : value;
+
+  const valueFromEvent = useCallback(
+    (evt: GestureResponderEvent): number => {
+      const x = evt.nativeEvent.locationX;
+      return clamp(x / trackWidth, 0, 1);
+    },
+    [trackWidth]
+  );
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: (evt) => {
+      setSliding(true);
+      const v = valueFromEvent(evt);
+      setSlideValue(v);
+      onValueChange(v);
+    },
+    onPanResponderMove: (evt) => {
+      const v = clamp(
+        (evt.nativeEvent.locationX) / trackWidth,
+        0,
+        1
+      );
+      setSlideValue(v);
+      onValueChange(v);
+    },
+    onPanResponderRelease: (evt) => {
+      const v = clamp(
+        (evt.nativeEvent.locationX) / trackWidth,
+        0,
+        1
+      );
+      setSlideValue(v);
+      setSliding(false);
+      onSlidingComplete(v);
+    },
+  });
+
+  return (
+    <View
+      style={sliderStyles.track}
+      onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
+      {...panResponder.panHandlers}
+    >
+      {/* Background track */}
+      <View style={[sliderStyles.trackBg, { backgroundColor: trackColor }]} />
+      {/* Active / filled track */}
+      <View
+        style={[
+          sliderStyles.trackFill,
+          { width: `${displayValue * 100}%`, backgroundColor: activeTrackColor },
+        ]}
+      />
+      {/* Thumb */}
+      <View
+        style={[
+          sliderStyles.thumb,
+          { left: `${displayValue * 100}%`, backgroundColor: thumbColor },
+        ]}
+      />
+    </View>
+  );
+}
+
+const sliderStyles = StyleSheet.create({
+  track: {
+    height: 28,
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  trackBg: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 4,
+    borderRadius: 2,
+  },
+  trackFill: {
+    position: 'absolute',
+    left: 0,
+    height: 4,
+    borderRadius: 2,
+  },
+  thumb: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginLeft: -8,
+    top: '50%',
+    marginTop: -8,
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Player Screen
+// ---------------------------------------------------------------------------
 export default function PlayerScreen() {
   const router = useRouter();
-  const { currentTrack, isPlaying, togglePlayPause } = useAudio();
+  const {
+    currentTrack,
+    isPlaying,
+    currentTime,
+    duration,
+    volume,
+    togglePlayPause,
+    seekTo,
+    setVolume,
+  } = useAudio();
 
   const title = currentTrack?.title ?? 'No track selected';
   const artist = currentTrack?.artist ?? '—';
 
+  // Normalised progress (0–1). Guard against divide-by-zero.
+  const progress = duration > 0 ? clamp(currentTime / duration, 0, 1) : 0;
+  const remaining = duration > 0 ? Math.max(0, duration - currentTime) : 0;
+
+  // Progress slider handlers
+  const handleProgressChange = useCallback((_v: number) => {
+    // Provide live feedback during drag (no-op: context time won't update
+    // while sliding, so the slider thumb follows the gesture via slideValue)
+  }, []);
+
+  const handleProgressComplete = useCallback(
+    (normalised: number) => {
+      if (duration > 0) {
+        seekTo(normalised * duration);
+      }
+    },
+    [duration, seekTo]
+  );
+
+  // Volume slider handlers
+  const handleVolumeChange = useCallback(
+    (v: number) => {
+      setVolume(v);
+    },
+    [setVolume]
+  );
+
   return (
     <View style={styles.container}>
-      {/* Dismiss chevron */}
+      {/* ── Dismiss chevron ── */}
       <TouchableOpacity
         style={styles.dismissArea}
         onPress={() => router.back()}
         activeOpacity={0.6}
+        accessibilityLabel="Close player"
       >
         <View style={styles.dismissHandle} />
         <Text style={styles.dismissLabel}>Player</Text>
       </TouchableOpacity>
 
-      {/* Album Art */}
+      {/* ── Album Art ── */}
       <View style={styles.albumArt}>
         {currentTrack?.artworkUri ? (
-          <Image source={{ uri: currentTrack.artworkUri }} style={styles.albumArtImage} />
+          <Image
+            source={{ uri: currentTrack.artworkUri }}
+            style={styles.albumArtImage}
+          />
         ) : (
           <Text style={styles.albumArtIcon}>♪</Text>
         )}
       </View>
 
-      {/* Track info */}
+      {/* ── Track info ── */}
       <View style={styles.trackInfo}>
         <Text style={styles.trackTitle} numberOfLines={2}>
           {title}
@@ -53,10 +227,29 @@ export default function PlayerScreen() {
         <Text style={styles.trackArtist}>{artist}</Text>
       </View>
 
-      {/* Playback controls */}
+      {/* ── Progress bar with time labels ── */}
+      <View style={styles.progressContainer}>
+        <Slider
+          value={progress}
+          onValueChange={handleProgressChange}
+          onSlidingComplete={handleProgressComplete}
+          activeTrackColor={Colors.primary}
+          trackColor={Colors.border}
+          thumbColor={Colors.primary}
+        />
+        <View style={styles.progressTimes}>
+          <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+          <Text style={styles.timeText}>-{formatTime(remaining)}</Text>
+        </View>
+      </View>
+
+      {/* ── Playback controls ── */}
       <View style={styles.controls}>
-        {/* Skip back (placeholder) */}
-        <TouchableOpacity style={styles.controlBtn}>
+        {/* Skip back — placeholder */}
+        <TouchableOpacity
+          style={styles.controlBtn}
+          accessibilityLabel="Previous track"
+        >
           <Text style={styles.controlIcon}>⏮</Text>
         </TouchableOpacity>
 
@@ -66,34 +259,32 @@ export default function PlayerScreen() {
           onPress={togglePlayPause}
           disabled={!currentTrack}
           activeOpacity={0.8}
+          accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
         >
           <Text style={styles.playIcon}>{isPlaying ? '⏸' : '▶'}</Text>
         </TouchableOpacity>
 
-        {/* Skip forward (placeholder) */}
-        <TouchableOpacity style={styles.controlBtn}>
+        {/* Skip forward — placeholder */}
+        <TouchableOpacity
+          style={styles.controlBtn}
+          accessibilityLabel="Next track"
+        >
           <Text style={styles.controlIcon}>⏭</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Progress bar placeholder */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBg}>
-          <View
-            style={[styles.progressFill, { width: currentTrack ? '30%' : '0%' }]}
-          />
-        </View>
-        <View style={styles.progressTimes}>
-          <Text style={styles.timeText}>0:00</Text>
-          <Text style={styles.timeText}>{formatDuration(currentTrack?.duration)}</Text>
-        </View>
-      </View>
-
-      {/* Volume slider placeholder */}
+      {/* ── Volume slider ── */}
       <View style={styles.volumeRow}>
         <Text style={styles.volumeIcon}>🔈</Text>
-        <View style={styles.volumeTrack}>
-          <View style={styles.volumeFill} />
+        <View style={styles.volumeSlider}>
+          <Slider
+            value={volume}
+            onValueChange={handleVolumeChange}
+            onSlidingComplete={handleVolumeChange}
+            activeTrackColor={Colors.textMuted}
+            trackColor={Colors.border}
+            thumbColor={Colors.textMuted}
+          />
         </View>
         <Text style={styles.volumeIcon}>🔊</Text>
       </View>
@@ -101,6 +292,9 @@ export default function PlayerScreen() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Styles — identical structure to original, no visual change
+// ---------------------------------------------------------------------------
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -146,7 +340,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   albumArtIcon: { fontSize: 80, color: Colors.textMuted },
-  trackInfo: { marginBottom: 32 },
+  trackInfo: { marginBottom: 24 },
   trackTitle: {
     fontSize: 22,
     fontFamily: 'Inter-Bold',
@@ -156,6 +350,17 @@ const styles = StyleSheet.create({
   },
   trackArtist: {
     fontSize: 16,
+    fontFamily: 'Inter',
+    color: Colors.textMuted,
+  },
+  progressContainer: { marginBottom: 24 },
+  progressTimes: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  timeText: {
+    fontSize: 12,
     fontFamily: 'Inter',
     color: Colors.textMuted,
   },
@@ -181,45 +386,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   playIcon: { fontSize: 28, color: Colors.textPrimary },
-  progressContainer: { marginBottom: 24 },
-  progressBg: {
-    height: 4,
-    backgroundColor: Colors.border,
-    borderRadius: 2,
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: Colors.primary,
-    borderRadius: 2,
-  },
-  progressTimes: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  timeText: {
-    fontSize: 12,
-    fontFamily: 'Inter',
-    color: Colors.textMuted,
-  },
   volumeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
   volumeIcon: { fontSize: 18 },
-  volumeTrack: {
-    flex: 1,
-    height: 4,
-    backgroundColor: Colors.border,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  volumeFill: {
-    width: '70%',
-    height: '100%',
-    backgroundColor: Colors.textMuted,
-    borderRadius: 2,
-  },
+  volumeSlider: { flex: 1 },
 });

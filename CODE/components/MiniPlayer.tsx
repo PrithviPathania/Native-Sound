@@ -8,21 +8,24 @@ export default function MiniPlayer() {
   const router = useRouter();
   const { currentTrack, isPlaying, togglePlayPause } = useAudio();
 
-  // Don't render anything if no track has been loaded yet.
+  // Render nothing until a track is loaded.
   if (!currentTrack) return null;
 
   return (
     <View style={styles.container}>
-      {/* Tap the info section to open the full player modal */}
+      {/* Tapping the info area opens the full-screen player modal */}
       <TouchableOpacity
         style={styles.infoArea}
         activeOpacity={0.8}
         onPress={() => router.push('/player')}
       >
-        {/* Thumbnail */}
+        {/* Album art or music note placeholder */}
         <View style={styles.thumbnail}>
           {currentTrack.artworkUri ? (
-            <Image source={{ uri: currentTrack.artworkUri }} style={styles.thumbnailImage} />
+            <Image
+              source={{ uri: currentTrack.artworkUri }}
+              style={styles.thumbnailImage}
+            />
           ) : (
             <Text style={styles.thumbnailIcon}>♪</Text>
           )}
@@ -39,11 +42,12 @@ export default function MiniPlayer() {
         </View>
       </TouchableOpacity>
 
-      {/* Play / Pause button */}
+      {/* Play / Pause — reflects isPlaying from AudioContext */}
       <TouchableOpacity
         style={styles.playBtn}
         activeOpacity={0.8}
         onPress={togglePlayPause}
+        accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
       >
         <Text style={styles.playIcon}>{isPlaying ? '⏸' : '▶'}</Text>
       </TouchableOpacity>
