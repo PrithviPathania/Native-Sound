@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Radii } from '../../constants/theme';
-import { s, c } from '../../styles/bootstrap';
+import { s } from '../../styles/bootstrap';
 import { importAudioFiles } from '../../services/fileImporter';
 
 export default function ImportPage() {
@@ -54,21 +54,20 @@ export default function ImportPage() {
       </Text>
 
       {/* Drop zone / import card with dashed border */}
-      <View style={[styles.dropZone, s.roundedLg, s.p1, s.mb4]}>
-        <View style={[styles.dropZoneInner, s.flex1, s.rounded, s.alignItemsCenter, s.justifyContentCenter, s.p4]}>
+      <View style={styles.dropZone}>
+        <View style={[styles.dropZoneInner, s.alignItemsCenter, s.justifyContentCenter]}>
           <Text style={[styles.dropIcon, s.mb3]}>{importing ? '⏳' : '📂'}</Text>
           <Text style={[styles.dropTitle, s.textWhite, s.mb1]}>
             {importing ? 'Importing…' : 'Select a File'}
           </Text>
           <Text style={[styles.dropSubtitle, s.textSecondary, s.mb4]}>
-            Supported formats: mp3, m4a, flac, wav
+            Only mp3 files are supported
           </Text>
 
-          {/* Browse CTA — Bootstrap btn-primary pattern */}
+          {/* Browse CTA — Bootstrap btn-primary pattern with unclipped glow shadow */}
           <TouchableOpacity
             style={[
               styles.browseButton,
-              s.rounded,
               s.alignItemsCenter,
               s.justifyContentCenter,
               importing && styles.browseButtonDisabled,
@@ -100,55 +99,105 @@ export default function ImportPage() {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.background,
+    overflow: 'visible',
   },
+
   backButton: {
     minHeight: 44,
   },
-  backArrow: { fontSize: 20, marginRight: 6, color: Colors.primary },
-  backText: { fontSize: 16, fontFamily: 'Inter', color: Colors.primary },
+
+  backArrow: {
+    fontSize: 20,
+    marginRight: 6,
+    color: Colors.primary,
+  },
+
+  backText: {
+    fontSize: 16,
+    fontFamily: 'Inter',
+    color: Colors.primary,
+  },
+
   pageTitle: {
     fontSize: 28,
     fontFamily: 'Inter-Bold',
     fontWeight: '700',
   },
+
   pageSubtitle: {
     fontSize: 14,
     fontFamily: 'Inter',
   },
+
   dropZone: {
     borderWidth: 2,
     borderColor: Colors.border,
     borderStyle: 'dashed',
-    maxHeight: 320,
+    borderRadius: Radii.large,
+    padding: 4,
+    minHeight: 320,
+    marginBottom: 24,
+    overflow: 'visible',
   },
+
   dropZoneInner: {
     backgroundColor: Colors.surface,
+    borderRadius: Radii.standard,
+    padding: 24,
+    flex: 1,
+    overflow: 'visible',
   },
-  dropIcon: { fontSize: 48 },
+
+  dropIcon: {
+    fontSize: 48,
+  },
+
   dropTitle: {
     fontSize: 20,
     fontFamily: 'Inter-Bold',
     fontWeight: '600',
   },
+
   dropSubtitle: {
     fontSize: 13,
     fontFamily: 'Inter',
   },
+
   browseButton: {
     backgroundColor: Colors.primary,
     paddingHorizontal: 32,
     minHeight: 48,
     minWidth: 220,
+    borderRadius: Radii.standard,
+    overflow: 'visible',
+
+    // Cross-platform shadow surrounding the entire button
+    shadowColor: Colors.primary,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 8,
+
+    marginVertical: 8,
   },
+
   browseButtonDisabled: {
     backgroundColor: 'rgba(13, 110, 253, 0.5)',
+    shadowOpacity: 0.2,
+    elevation: 2,
   },
+
   browseButtonText: {
     fontSize: 16,
     fontFamily: 'Inter-Bold',
     fontWeight: '600',
   },
+
   infoSection: {},
+
   infoText: {
     fontSize: 13,
     fontFamily: 'Inter',
