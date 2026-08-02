@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, ActivityIndicator, Image } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Radii } from '../../constants/theme';
+import { s, c } from '../../styles/bootstrap';
 import { getLikedTracks } from '../../services/database';
 import { useAudio } from '../../context/AudioContext';
 import type { Track } from '../../types/track';
@@ -46,12 +47,9 @@ export default function LikedSongsPage() {
 
   const handleUnlike = async (track: Track) => {
     try {
-      // Remove from local list immediately for instant feedback
       setTracks((prev) => prev.filter((t) => t.id !== track.id));
-      // Sync with DB and global context state
       await toggleLike(track.id);
     } catch (err) {
-      // Re-add to list on failure
       setTracks((prev) => [track, ...prev]);
       Alert.alert('Error', 'Could not update liked status.');
     }
@@ -61,25 +59,33 @@ export default function LikedSongsPage() {
     const isActive = currentTrack?.id === item.id;
     return (
       <TouchableOpacity
-        style={[styles.trackRow, isActive && styles.trackRowActive]}
+        style={[
+          styles.trackRow,
+          s.flexRow,
+          s.alignItemsCenter,
+          s.p2,
+          s.mb2,
+          s.rounded,
+          isActive && styles.trackRowActive,
+        ]}
         activeOpacity={0.7}
         onPress={() => handleTrackPress(item)}
       >
-        <View style={[styles.trackThumb, isActive && styles.trackThumbActive]}>
+        <View style={[styles.trackThumb, s.rounded, s.alignItemsCenter, s.justifyContentCenter, isActive && styles.trackThumbActive]}>
           {item.artworkUri ? (
             <Image source={{ uri: item.artworkUri }} style={styles.trackThumbImage} />
           ) : (
             <Text style={styles.trackThumbIcon}>{isActive && isPlaying ? '▶' : '♪'}</Text>
           )}
         </View>
-        <View style={styles.trackInfo}>
-          <Text style={[styles.trackTitle, isActive && styles.trackTitleActive]} numberOfLines={1}>
+        <View style={[s.flex1, styles.trackInfo]}>
+          <Text style={[styles.trackTitle, s.textWhite, isActive && styles.trackTitleActive]} numberOfLines={1}>
             {item.title}
           </Text>
-          <Text style={styles.trackArtist} numberOfLines={1}>{item.artist}</Text>
+          <Text style={[styles.trackArtist, s.textSecondary]} numberOfLines={1}>{item.artist}</Text>
         </View>
-        <Text style={styles.trackDuration}>{formatDuration(item.duration)}</Text>
-        <TouchableOpacity onPress={() => handleUnlike(item)} style={styles.heartBtn}>
+        <Text style={[styles.trackDuration, s.textSecondary]}>{formatDuration(item.duration)}</Text>
+        <TouchableOpacity onPress={() => handleUnlike(item)} style={styles.heartBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Text style={styles.heartIcon}>❤</Text>
         </TouchableOpacity>
       </TouchableOpacity>
@@ -87,35 +93,35 @@ export default function LikedSongsPage() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, s.flex1, s.bgDark, s.px3]}>
       {/* Back button */}
       <TouchableOpacity
-        style={styles.backButton}
+        style={[styles.backButton, s.flexRow, s.alignItemsCenter, s.py2]}
         activeOpacity={0.7}
         onPress={() => router.back()}
       >
-        <Text style={styles.backArrow}>←</Text>
-        <Text style={styles.backText}>Library</Text>
+        <Text style={[styles.backArrow, s.textPrimary]}>←</Text>
+        <Text style={[styles.backText, s.textPrimary]}>Library</Text>
       </TouchableOpacity>
 
-      {/* Page header */}
-      <View style={styles.header}>
+      {/* Page header with danger color heart */}
+      <View style={[styles.header, s.flexRow, s.alignItemsCenter, s.py3]}>
         <Text style={styles.heartBig}>❤️</Text>
-        <Text style={styles.pageTitle}>Liked Songs</Text>
+        <Text style={[styles.pageTitle, s.textWhite]}>Liked Songs</Text>
       </View>
 
       {/* Content */}
       {loading ? (
-        <View style={styles.center}>
+        <View style={[s.flex1, s.alignItemsCenter, s.justifyContentCenter]}>
           <ActivityIndicator color={Colors.primary} size="large" />
         </View>
       ) : tracks.length === 0 ? (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIconContainer}>
+        <View style={[styles.emptyState, s.flex1, s.alignItemsCenter, s.justifyContentCenter]}>
+          <View style={[styles.emptyIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb3]}>
             <Text style={styles.emptyHeart}>♥</Text>
           </View>
-          <Text style={styles.emptyTitle}>No liked songs yet</Text>
-          <Text style={styles.emptySubtitle}>
+          <Text style={[styles.emptyTitle, s.textWhite, s.mb1]}>No liked songs yet</Text>
+          <Text style={[styles.emptySubtitle, s.textSecondary]}>
             Tap the ♥ on any track to save it here
           </Text>
         </View>
@@ -134,87 +140,61 @@ export default function LikedSongsPage() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: Colors.background,
-    paddingHorizontal: 20,
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 16,
-    paddingBottom: 8,
+    minHeight: 44,
   },
-  backArrow: { fontSize: 20, color: Colors.primary, marginRight: 6 },
+  backArrow: { fontSize: 20, marginRight: 6, color: Colors.primary },
   backText: { fontSize: 16, fontFamily: 'Inter', color: Colors.primary },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 24,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   heartBig: { fontSize: 28, marginRight: 12 },
   pageTitle: {
     fontSize: 28,
     fontFamily: 'Inter-Bold',
     fontWeight: '700',
-    color: Colors.textPrimary,
   },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     paddingBottom: 80,
   },
   emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.danger + '15',
+    width: 72,
+    height: 72,
+    backgroundColor: 'rgba(220, 53, 69, 0.15)',
     borderWidth: 1,
-    borderColor: Colors.danger + '30',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
+    borderColor: 'rgba(220, 53, 69, 0.3)',
   },
   emptyHeart: { fontSize: 32, color: Colors.danger },
   emptyTitle: {
     fontSize: 20,
     fontFamily: 'Inter-Bold',
     fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
     fontFamily: 'Inter',
-    color: Colors.textMuted,
     textAlign: 'center',
   },
   listContent: { paddingBottom: 16 },
   trackRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: Radii.standard,
-    marginBottom: 4,
+    minHeight: 48,
+    backgroundColor: 'transparent',
   },
-  trackRowActive: { backgroundColor: Colors.primary + '15' },
+  trackRowActive: { backgroundColor: 'rgba(13, 110, 253, 0.15)' },
   trackThumb: {
-    width: 44,
-    height: 44,
-    borderRadius: Radii.standard,
+    width: 48,
+    height: 48,
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
+    marginRight: 12,
     overflow: 'hidden',
   },
   trackThumbActive: {
-    backgroundColor: Colors.primary + '30',
+    backgroundColor: 'rgba(13, 110, 253, 0.3)',
     borderColor: Colors.primary,
   },
   trackThumbImage: {
@@ -222,22 +202,25 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   trackThumbIcon: { fontSize: 18, color: Colors.textMuted },
-  trackInfo: { flex: 1 },
+  trackInfo: { marginRight: 8 },
   trackTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'Inter-Bold',
     fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 3,
+    marginBottom: 2,
   },
   trackTitleActive: { color: Colors.primary },
-  trackArtist: { fontSize: 13, fontFamily: 'Inter', color: Colors.textMuted },
+  trackArtist: { fontSize: 14, fontFamily: 'Inter' },
   trackDuration: {
     fontSize: 12,
     fontFamily: 'Inter',
-    color: Colors.textMuted,
-    marginLeft: 8,
+    marginRight: 8,
   },
-  heartBtn: { padding: 8 },
+  heartBtn: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   heartIcon: { fontSize: 18, color: Colors.danger },
 });

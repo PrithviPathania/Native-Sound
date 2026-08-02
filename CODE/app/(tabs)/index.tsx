@@ -5,17 +5,17 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
-  ActivityIndicator,
   Image,
   RefreshControl,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Radii } from '../../constants/theme';
+import { s, c } from '../../styles/bootstrap';
 import { useAudio } from '../../context/AudioContext';
 import type { Track } from '../../types/track';
 
 function formatDuration(seconds?: number): string {
-  if (!seconds || isNaN(seconds) || seconds <= 0) return '0:00';
+  if (!seconds || isNaN(seconds) || seconds < 0) return '0:00';
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
@@ -23,11 +23,18 @@ function formatDuration(seconds?: number): string {
 
 export default function LibraryPage() {
   const router = useRouter();
-  const { playTrack, currentTrack, isPlaying, toggleLike, tracks, refreshTracks } = useAudio();
+  const {
+    playTrack,
+    currentTrack,
+    isPlaying,
+    toggleLike,
+    tracks,
+    refreshTracks,
+    playAll,
+    shuffleAll,
+  } = useAudio();
   const [refreshing, setRefreshing] = useState(false);
 
-  // Re-fetch from SQLite into AudioContext every time this screen comes into focus.
-  // Because tracks comes from AudioContext, toggleLike updates are reflected immediately.
   useFocusEffect(
     useCallback(() => {
       refreshTracks();
@@ -45,16 +52,44 @@ export default function LibraryPage() {
     router.push('/player');
   };
 
+  const handlePlayAll = async () => {
+    await playAll();
+    router.push('/player');
+  };
+
+  const handleShuffleAll = async () => {
+    await shuffleAll();
+    router.push('/player');
+  };
+
   const renderTrack = ({ item }: { item: Track }) => {
     const isActive = currentTrack?.id === item.id;
+    const isLiked = item.liked || item.isLiked;
+
     return (
       <TouchableOpacity
-        style={[styles.trackRow, isActive && styles.trackRowActive]}
+        style={[
+          styles.trackRow,
+          s.flexRow,
+          s.alignItemsCenter,
+          s.p2,
+          s.mb2,
+          s.rounded,
+          isActive && styles.trackRowActive,
+        ]}
         activeOpacity={0.7}
         onPress={() => handleTrackPress(item)}
       >
-        {/* Album art thumbnail / placeholder */}
-        <View style={[styles.trackThumb, isActive && styles.trackThumbActive]}>
+        {/* 48x48 Thumbnail with rounded-2 */}
+        <View
+          style={[
+            styles.trackThumb,
+            s.rounded,
+            s.alignItemsCenter,
+            s.justifyContentCenter,
+            isActive && styles.trackThumbActive,
+          ]}
+        >
           {item.artworkUri ? (
             <Image source={{ uri: item.artworkUri }} style={styles.trackThumbImage} />
           ) : (
@@ -62,32 +97,46 @@ export default function LibraryPage() {
           )}
         </View>
 
-        <View style={styles.trackInfo}>
+        {/* Track Title & Artist */}
+        <View style={[s.flex1, styles.trackInfo]}>
           <Text
-            style={[styles.trackTitle, isActive && styles.trackTitleActive]}
+            style={[
+              styles.trackTitle,
+              s.textWhite,
+              isActive && styles.trackTitleActive,
+            ]}
             numberOfLines={1}
           >
             {item.title}
           </Text>
-          <Text style={styles.trackArtist} numberOfLines={1}>
+          <Text style={[styles.trackArtist, s.textSecondary]} numberOfLines={1}>
             {item.artist}
           </Text>
         </View>
 
-        <Text style={styles.trackDuration}>{formatDuration(item.duration)}</Text>
+        {/* Duration */}
+        <Text style={[styles.trackDuration, s.textSecondary]}>
+          {formatDuration(item.duration)}
+        </Text>
 
+        {/* Heart CTA trailing */}
         <TouchableOpacity
           style={styles.heartBtn}
-          onPress={(e) => { e.stopPropagation(); toggleLike(item.id); }}
+          onPress={(e) => {
+            e.stopPropagation();
+            toggleLike(item.id);
+          }}
           activeOpacity={0.7}
-          accessibilityLabel={(item.liked || item.isLiked) ? 'Unlike track' : 'Like track'}
+          accessibilityLabel={isLiked ? 'Unlike track' : 'Like track'}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={[
-            styles.heartBadge,
-            !(item.liked || item.isLiked) && styles.heartBadgeUnliked,
-          ]}>
-            {(item.liked || item.isLiked) ? '❤' : '🤍'}
+          <Text
+            style={[
+              styles.heartBadge,
+              !isLiked && styles.heartBadgeUnliked,
+            ]}
+          >
+            {isLiked ? '❤' : '🤍'}
           </Text>
         </TouchableOpacity>
       </TouchableOpacity>
@@ -95,48 +144,77 @@ export default function LibraryPage() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, s.flex1, s.bgDark, s.px3]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, s.flexRow, s.alignItemsCenter, s.py3]}>
         <Text style={styles.headerIcon}>🎵</Text>
-        <Text style={styles.headerTitle}>Your Library</Text>
+        <Text style={[styles.headerTitle, s.textWhite]}>Your Library</Text>
       </View>
 
-      {/* Navigation CTAs */}
-      <View style={styles.ctaRow}>
+      {/* Navigation CTAs — Row 1: Import & Liked Songs */}
+      <View style={[styles.ctaRow, s.flexRow, s.mb3]}>
         <TouchableOpacity
-          style={styles.ctaCard}
+          style={[styles.ctaCard, s.flex1, s.p3, s.rounded, s.alignItemsCenter]}
           activeOpacity={0.7}
           onPress={() => router.push('/(tabs)/import')}
         >
-          <View style={styles.ctaIconContainer}>
+          <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2]}>
             <Text style={styles.ctaIcon}>📥</Text>
           </View>
-          <Text style={styles.ctaTitle}>Import Songs</Text>
-          <Text style={styles.ctaSubtitle}>Add from local storage</Text>
+          <Text style={[styles.ctaTitle, s.textWhite, s.mb1]}>Import Songs</Text>
+          <Text style={[styles.ctaSubtitle, s.textSecondary]}>Add from local storage</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.ctaCard}
+          style={[styles.ctaCard, s.flex1, s.p3, s.rounded, s.alignItemsCenter]}
           activeOpacity={0.7}
           onPress={() => router.push('/(tabs)/liked')}
         >
-          <View style={[styles.ctaIconContainer, styles.ctaIconLiked]}>
+          <View style={[styles.ctaIconContainer, styles.ctaIconLiked, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2]}>
             <Text style={styles.ctaIcon}>❤️</Text>
           </View>
-          <Text style={styles.ctaTitle}>Liked Songs</Text>
-          <Text style={styles.ctaSubtitle}>View favorites →</Text>
+          <Text style={[styles.ctaTitle, s.textWhite, s.mb1]}>Liked Songs</Text>
+          <Text style={[styles.ctaSubtitle, s.textSecondary]}>View favorites →</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Navigation CTAs — Row 2: Play All & Shuffle All (Only shown when tracks exist) */}
+      {tracks.length > 0 && (
+        <View style={[styles.ctaRow, s.flexRow, s.mb4]}>
+          <TouchableOpacity
+            style={[styles.ctaCard, s.flex1, s.p3, s.rounded, s.alignItemsCenter]}
+            activeOpacity={0.7}
+            onPress={handlePlayAll}
+          >
+            <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2]}>
+              <Text style={styles.ctaIcon}>▶️</Text>
+            </View>
+            <Text style={[styles.ctaTitle, s.textWhite, s.mb1]}>Play All</Text>
+            <Text style={[styles.ctaSubtitle, s.textSecondary]}>Start from top</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.ctaCard, s.flex1, s.p3, s.rounded, s.alignItemsCenter]}
+            activeOpacity={0.7}
+            onPress={handleShuffleAll}
+          >
+            <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2]}>
+              <Text style={styles.ctaIcon}>🔀</Text>
+            </View>
+            <Text style={[styles.ctaTitle, s.textWhite, s.mb1]}>Shuffle All</Text>
+            <Text style={[styles.ctaSubtitle, s.textSecondary]}>Play in random order</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Track list / empty state */}
       {tracks.length === 0 ? (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIconContainer}>
+        <View style={[styles.emptyState, s.flex1, s.alignItemsCenter, s.justifyContentCenter]}>
+          <View style={[styles.emptyIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb3]}>
             <Text style={styles.emptyIcon}>♪</Text>
           </View>
-          <Text style={styles.emptyTitle}>No songs yet</Text>
-          <Text style={styles.emptySubtitle}>
+          <Text style={[styles.emptyTitle, s.textWhite, s.mb1]}>No songs yet</Text>
+          <Text style={[styles.emptySubtitle, s.textSecondary]}>
             Import your first track to get started
           </Text>
         </View>
@@ -163,152 +241,110 @@ export default function LibraryPage() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: Colors.background,
-    paddingHorizontal: 20,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingTop: 16,
-    paddingBottom: 20,
+    paddingBottom: 16,
   },
   headerIcon: { fontSize: 28, marginRight: 12 },
   headerTitle: {
     fontSize: 28,
     fontFamily: 'Inter-Bold',
     fontWeight: '700',
-    color: Colors.textPrimary,
   },
   ctaRow: {
-    flexDirection: 'row',
     gap: 12,
-    marginBottom: 24,
   },
   ctaCard: {
-    flex: 1,
     backgroundColor: Colors.surface,
-    borderRadius: Radii.standard,
     borderWidth: 1,
     borderColor: Colors.border,
-    padding: 16,
-    alignItems: 'center',
   },
   ctaIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.primary + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
+    width: 44,
+    height: 44,
+    backgroundColor: 'rgba(13, 110, 253, 0.15)',
   },
-  ctaIconLiked: { backgroundColor: Colors.danger + '20' },
-  ctaIcon: { fontSize: 22 },
+  ctaIconLiked: {
+    backgroundColor: 'rgba(220, 53, 69, 0.15)',
+  },
+  ctaIcon: { fontSize: 20 },
   ctaTitle: {
     fontSize: 15,
     fontFamily: 'Inter-Bold',
     fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 4,
   },
   ctaSubtitle: {
     fontSize: 12,
     fontFamily: 'Inter',
-    color: Colors.textMuted,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     paddingBottom: 80,
   },
   emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 72,
+    height: 72,
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
   },
   emptyIcon: { fontSize: 32, color: Colors.textMuted },
   emptyTitle: {
     fontSize: 20,
     fontFamily: 'Inter-Bold',
     fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
     fontFamily: 'Inter',
-    color: Colors.textMuted,
     textAlign: 'center',
   },
   listContent: { paddingBottom: 16 },
   trackRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: Radii.standard,
-    marginBottom: 4,
+    minHeight: 48,
+    backgroundColor: 'transparent',
   },
   trackRowActive: {
-    backgroundColor: Colors.primary + '15',
+    backgroundColor: 'rgba(13, 110, 253, 0.15)',
   },
   trackThumb: {
-    width: 44,
-    height: 44,
-    borderRadius: Radii.standard,
+    width: 48,
+    height: 48,
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
+    marginRight: 12,
     overflow: 'hidden',
   },
   trackThumbActive: {
-    backgroundColor: Colors.primary + '30',
+    backgroundColor: 'rgba(13, 110, 253, 0.3)',
     borderColor: Colors.primary,
   },
   trackThumbImage: {
     width: '100%',
     height: '100%',
-    borderRadius: Radii.standard,
   },
   trackThumbIcon: { fontSize: 18, color: Colors.textMuted },
-  trackInfo: { flex: 1 },
+  trackInfo: { marginRight: 8 },
   trackTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'Inter-Bold',
     fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 3,
+    marginBottom: 2,
   },
   trackTitleActive: { color: Colors.primary },
   trackArtist: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: 'Inter',
-    color: Colors.textMuted,
   },
   trackDuration: {
     fontSize: 12,
     fontFamily: 'Inter',
-    color: Colors.textMuted,
-    marginLeft: 8,
+    marginRight: 8,
   },
   heartBadge: {
-    fontSize: 16,
+    fontSize: 18,
     color: Colors.danger,
   },
   heartBadgeUnliked: {
@@ -316,7 +352,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   heartBtn: {
-    padding: 4,
-    marginLeft: 4,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

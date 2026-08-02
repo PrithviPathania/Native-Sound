@@ -1,50 +1,63 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Colors, Radii } from '../constants/theme';
+import { useRouter, usePathname } from 'expo-router';
+import { Colors } from '../constants/theme';
+import { s, c } from '../styles/bootstrap';
 import { useAudio } from '../context/AudioContext';
+
+function clamp(val: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, val));
+}
 
 export default function MiniPlayer() {
   const router = useRouter();
-  const { currentTrack, isPlaying, togglePlayPause } = useAudio();
+  const pathname = usePathname();
+  const { currentTrack, isPlaying, togglePlayPause, currentTime, duration } = useAudio();
 
-  // Render nothing until a track is loaded.
-  if (!currentTrack) return null;
+  // Don't render if no track is loaded or if player modal is open
+  if (!currentTrack || pathname === '/player' || pathname?.includes('/player')) {
+    return null;
+  }
+
+  // Calculate 2px top progress bar percentage
+  const progressPct = duration > 0 ? clamp(currentTime / duration, 0, 1) * 100 : 0;
 
   return (
-    <View style={styles.container}>
-      {/* Tapping the info area opens the full-screen player modal */}
+    <View style={[styles.container, s.flexRow, s.alignItemsCenter]}>
+      {/* 2px top progress bar */}
+      <View style={styles.progressBarTrack}>
+        <View style={[styles.progressBarFill, { width: `${progressPct}%` }]} />
+      </View>
+
+      {/* Tap info area to expand full player modal */}
       <TouchableOpacity
-        style={styles.infoArea}
+        style={[styles.infoArea, s.flex1, s.flexRow, s.alignItemsCenter]}
         activeOpacity={0.8}
         onPress={() => router.push('/player')}
       >
-        {/* Album art or music note placeholder */}
-        <View style={styles.thumbnail}>
+        {/* 40x40 Thumbnail with rounded-2 */}
+        <View style={[styles.thumbnail, s.rounded, s.alignItemsCenter, s.justifyContentCenter]}>
           {currentTrack.artworkUri ? (
-            <Image
-              source={{ uri: currentTrack.artworkUri }}
-              style={styles.thumbnailImage}
-            />
+            <Image source={{ uri: currentTrack.artworkUri }} style={styles.thumbnailImage} />
           ) : (
             <Text style={styles.thumbnailIcon}>♪</Text>
           )}
         </View>
 
-        {/* Track title & artist */}
-        <View style={styles.textBlock}>
-          <Text style={styles.title} numberOfLines={1}>
+        {/* Track info column */}
+        <View style={[s.flex1, s.flexColumn, s.justifyContentCenter]}>
+          <Text style={[styles.title, s.textWhite]} numberOfLines={1}>
             {currentTrack.title}
           </Text>
-          <Text style={styles.artist} numberOfLines={1}>
+          <Text style={[styles.artist, s.textSecondary]} numberOfLines={1}>
             {currentTrack.artist}
           </Text>
         </View>
       </TouchableOpacity>
 
-      {/* Play / Pause — reflects isPlaying from AudioContext */}
+      {/* Play / Pause button with rounded-circle & primary background */}
       <TouchableOpacity
-        style={styles.playBtn}
+        style={[styles.playBtn, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter]}
         activeOpacity={0.8}
         onPress={togglePlayPause}
         accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
@@ -57,29 +70,34 @@ export default function MiniPlayer() {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    height: 64,
     backgroundColor: Colors.surface,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    height: 70,
+    position: 'relative',
+  },
+  progressBarTrack: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: Colors.primary,
   },
   infoArea: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    height: '100%',
   },
   thumbnail: {
-    width: 44,
-    height: 44,
-    borderRadius: Radii.standard,
+    width: 40,
+    height: 40,
     backgroundColor: Colors.background,
     borderWidth: 1,
     borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: 12,
     overflow: 'hidden',
   },
@@ -87,13 +105,14 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  thumbnailIcon: { fontSize: 18, color: Colors.textMuted },
-  textBlock: { flex: 1 },
+  thumbnailIcon: {
+    fontSize: 16,
+    color: Colors.textMuted,
+  },
   title: {
     fontSize: 14,
     fontFamily: 'Inter-Bold',
     fontWeight: '600',
-    color: Colors.textPrimary,
     marginBottom: 2,
   },
   artist: {
@@ -102,13 +121,13 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   playBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
     backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginLeft: 12,
   },
-  playIcon: { fontSize: 18, color: Colors.textPrimary },
+  playIcon: {
+    fontSize: 16,
+    color: Colors.textPrimary,
+  },
 });

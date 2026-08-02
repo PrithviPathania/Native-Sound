@@ -1,10 +1,6 @@
 // Native Sound — Global Audio Context
-// Uses expo-audio's imperative createAudioPlayer API so the single player
-// instance persists across all screen transitions.
-//
-// Design: the AudioPlayer lives in a module-level ref inside the provider.
-// Status updates are pushed in via player.addListener('playbackStatusUpdate').
-// This avoids using the hook-only useAudioPlayerStatus inside a Context.
+// Provides a single AudioPlayer instance and global playback state.
+// Manages playback, shuffle, repeat, volume, seeking, and SQLite tracks.
 
 import React, {
   createContext,
@@ -21,16 +17,17 @@ import type { AudioPlayer, AudioStatus } from 'expo-audio';
 import type { Track } from '../types/track';
 import { getAllTracks, toggleLikeTrack } from '../services/database';
 
-// ---------------------------------------------------------------------------
-// Context shape
-// ---------------------------------------------------------------------------
+export type RepeatMode = 'off' | 'all' | 'one';
+
 export interface AudioContextValue {
   currentTrack: Track | null;
-  tracks: Track[];         // All tracks loaded from SQLite
+  tracks: Track[];
   isPlaying: boolean;
   currentTime: number;   // seconds
   duration: number;      // seconds (0 when unknown)
   volume: number;        // 0.0–1.0
+  isShuffled: boolean;
+  repeatMode: RepeatMode;
   playTrack: (track: Track) => Promise<void>;
   togglePlayPause: () => void;
   seekTo: (seconds: number) => Promise<void>;
@@ -40,13 +37,23 @@ export interface AudioContextValue {
   refreshTracks: () => Promise<void>;
   toggleLike: (trackId: number) => Promise<boolean>;
   likedTracks: Track[];
+  playAll: () => Promise<void>;
+  shuffleAll: () => Promise<void>;
+  toggleShuffle: () => void;
+  toggleRepeat: () => void;
 }
 
 const AudioContext = createContext<AudioContextValue | null>(null);
 
-// ---------------------------------------------------------------------------
-// AudioProvider
-// ---------------------------------------------------------------------------
+function shuffleArray<T>(arr: T[]): T[] {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export function AudioProvider({ children }: { children: ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -55,12 +62,24 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [duration, setDuration] = useState(0);
   const [volume, setVolumeState] = useState(1.0);
 
-  // The player is held in a ref so it survives re-renders without re-creating.
-  const playerRef = useRef<AudioPlayer | null>(null);
+  // Shuffle & Repeat state
+  const [isShuffled, setIsShuffled] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
 
-  // ---------------------------------------------------------------------------
-  // One-time audio session configuration + initial track load
-  // ---------------------------------------------------------------------------
+  // Shuffle queue tracking
+  const shuffleQueueRef = useRef<Track[]>([]);
+  const shuffleIndexRef = useRef<number>(0);
+
+  // Audio player singleton ref
+  const playerRef = useRef<AudioPlayer | null>(null);
+  const playNextRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  const currentTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    currentTimeRef.current = currentTime;
+  }, [currentTime]);
+
+  // One-time audio session configuration
   useEffect(() => {
     setAudioModeAsync({
       playsInSilentMode: true,
@@ -68,13 +87,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       interruptionMode: 'doNotMix',
     });
 
-    // Load all tracks from SQLite so playNext/playPrevious can navigate them.
     getAllTracks()
       .then(setTracks)
       .catch((err) => console.error('[AudioContext] Failed to load tracks:', err));
 
     return () => {
-      // Release player when the provider tree unmounts (app close).
       if (playerRef.current) {
         playerRef.current.remove();
         playerRef.current = null;
@@ -82,9 +99,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // refreshTracks — call after importing new tracks
-  // ---------------------------------------------------------------------------
   const refreshTracks = useCallback(async () => {
     try {
       const latest = await getAllTracks();
@@ -94,10 +108,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // Subscribe to playback status updates from the player
-  // ---------------------------------------------------------------------------
-  // Called once whenever we create or swap the player instance.
+  // Status listener
   const subscribeToPlayer = useCallback((player: AudioPlayer) => {
     const subscription = player.addListener(
       'playbackStatusUpdate',
@@ -106,13 +117,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         setCurrentTime(status.currentTime ?? 0);
         setDuration(status.duration ?? 0);
 
-        // Handle track end: update playing state
+        // Auto-advance when track finishes
         if (status.didJustFinish) {
           setIsPlaying(false);
           setCurrentTime(0);
+          playNextRef.current?.();
         }
 
-        // Surface playback errors
         if (status.error) {
           console.error('[AudioContext] Playback error:', status.error);
           Alert.alert('Playback Error', 'Unable to play this track.');
@@ -123,9 +134,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     return subscription;
   }, []);
 
-  // ---------------------------------------------------------------------------
   // playTrack
-  // ---------------------------------------------------------------------------
   const playTrack = useCallback(
     async (track: Track) => {
       try {
@@ -136,15 +145,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         }
 
         if (playerRef.current) {
-          // Reuse the existing player instance — swap the source.
           playerRef.current.replace({ uri: trackUri });
           playerRef.current.volume = volume;
           playerRef.current.play();
         } else {
-          // First play: create the player imperatively.
           const player = createAudioPlayer(
             { uri: trackUri },
-            { updateInterval: 250 }  // 250 ms → smooth progress bar
+            { updateInterval: 250 }
           );
           player.volume = volume;
           playerRef.current = player;
@@ -164,17 +171,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     [volume, subscribeToPlayer]
   );
 
-  // ---------------------------------------------------------------------------
-  // togglePlayPause
-  // ---------------------------------------------------------------------------
   const togglePlayPause = useCallback(() => {
     const player = playerRef.current;
     if (!player) return;
 
     if (isPlaying) {
       player.pause();
-      // State will sync via playbackStatusUpdate listener, but set eagerly
-      // so the UI responds immediately.
       setIsPlaying(false);
     } else {
       player.play();
@@ -182,9 +184,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, [isPlaying]);
 
-  // ---------------------------------------------------------------------------
-  // seekTo
-  // ---------------------------------------------------------------------------
   const seekTo = useCallback(async (seconds: number) => {
     const player = playerRef.current;
     if (!player) return;
@@ -196,9 +195,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // setVolume
-  // ---------------------------------------------------------------------------
   const setVolume = useCallback((vol: number) => {
     const clamped = Math.max(0, Math.min(1, vol));
     setVolumeState(clamped);
@@ -207,14 +203,144 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // toggleLike — optimistic in-memory update + SQLite write
-  // ---------------------------------------------------------------------------
-  // Updates the `liked`/`isLiked` fields on the matching track in the `tracks`
-  // array and on `currentTrack` (if it matches) without any re-fetch, so all
-  // consumers — Library, Player, Liked Songs — update instantly.
+  // Helper to build/refresh shuffle queue
+  const buildShuffleQueue = useCallback((allTracks: Track[], startWith?: Track | null) => {
+    if (allTracks.length === 0) return [];
+    if (!startWith) {
+      return shuffleArray(allTracks);
+    }
+    const remaining = allTracks.filter((t) => t.id !== startWith.id);
+    return [startWith, ...shuffleArray(remaining)];
+  }, []);
+
+  // toggleShuffle
+  const toggleShuffle = useCallback(() => {
+    setIsShuffled((prev) => {
+      const nextState = !prev;
+      if (nextState && tracks.length > 0) {
+        shuffleQueueRef.current = buildShuffleQueue(tracks, currentTrack);
+        shuffleIndexRef.current = 0;
+      }
+      return nextState;
+    });
+  }, [tracks, currentTrack, buildShuffleQueue]);
+
+  // toggleRepeat
+  const toggleRepeat = useCallback(() => {
+    setRepeatMode((prev) => {
+      if (prev === 'off') return 'all';
+      if (prev === 'all') return 'one';
+      return 'off';
+    });
+  }, []);
+
+  // playAll
+  const playAll = useCallback(async () => {
+    if (tracks.length === 0) return;
+    setIsShuffled(false);
+    await playTrack(tracks[0]);
+  }, [tracks, playTrack]);
+
+  // shuffleAll
+  const shuffleAll = useCallback(async () => {
+    if (tracks.length === 0) return;
+    const queue = buildShuffleQueue(tracks);
+    shuffleQueueRef.current = queue;
+    shuffleIndexRef.current = 0;
+    setIsShuffled(true);
+    await playTrack(queue[0]);
+  }, [tracks, buildShuffleQueue, playTrack]);
+
+  // playNext
+  const playNext = useCallback(async () => {
+    if (tracks.length === 0) return;
+
+    // Repeat one mode
+    if (repeatMode === 'one' && currentTrack) {
+      await seekTo(0);
+      playerRef.current?.play();
+      setIsPlaying(true);
+      return;
+    }
+
+    if (isShuffled) {
+      if (shuffleQueueRef.current.length === 0) {
+        shuffleQueueRef.current = buildShuffleQueue(tracks, currentTrack);
+        shuffleIndexRef.current = 0;
+      }
+
+      let nextIdx = shuffleIndexRef.current + 1;
+      if (nextIdx >= shuffleQueueRef.current.length) {
+        if (repeatMode === 'all') {
+          shuffleQueueRef.current = buildShuffleQueue(tracks);
+          nextIdx = 0;
+        } else {
+          setIsPlaying(false);
+          return;
+        }
+      }
+      shuffleIndexRef.current = nextIdx;
+      await playTrack(shuffleQueueRef.current[nextIdx]);
+    } else {
+      if (!currentTrack) {
+        await playTrack(tracks[0]);
+        return;
+      }
+      const idx = tracks.findIndex((t) => t.id === currentTrack.id);
+      let nextIdx = idx + 1;
+
+      if (nextIdx >= tracks.length) {
+        if (repeatMode === 'all') {
+          nextIdx = 0;
+        } else {
+          setIsPlaying(false);
+          return;
+        }
+      }
+      await playTrack(tracks[nextIdx]);
+    }
+  }, [tracks, currentTrack, isShuffled, repeatMode, buildShuffleQueue, playTrack, seekTo]);
+
+  // Keep playNextRef up-to-date for auto-advance listener
+  useEffect(() => {
+    playNextRef.current = playNext;
+  }, [playNext]);
+
+  // playPrevious
+  const playPrevious = useCallback(async () => {
+    if (tracks.length === 0) return;
+
+    // If track has been playing for more than 3 seconds, restart it
+    if (currentTimeRef.current > 3) {
+      await seekTo(0);
+      playerRef.current?.play();
+      setIsPlaying(true);
+      return;
+    }
+
+    if (isShuffled) {
+      if (shuffleIndexRef.current > 0) {
+        shuffleIndexRef.current -= 1;
+        await playTrack(shuffleQueueRef.current[shuffleIndexRef.current]);
+      } else if (repeatMode === 'all' && shuffleQueueRef.current.length > 0) {
+        shuffleIndexRef.current = shuffleQueueRef.current.length - 1;
+        await playTrack(shuffleQueueRef.current[shuffleIndexRef.current]);
+      } else {
+        await seekTo(0);
+      }
+    } else {
+      if (!currentTrack) {
+        await playTrack(tracks[tracks.length - 1]);
+        return;
+      }
+      const idx = tracks.findIndex((t) => t.id === currentTrack.id);
+      let prevIdx = idx <= 0 ? (repeatMode === 'all' ? tracks.length - 1 : 0) : idx - 1;
+      await playTrack(tracks[prevIdx]);
+    }
+  }, [tracks, currentTrack, isShuffled, repeatMode, playTrack, seekTo]);
+
+  // toggleLike
   const toggleLike = useCallback(async (trackId: number): Promise<boolean> => {
-    // Optimistically flip the state in memory first for instant UI feedback.
     let newLiked = false;
     setTracks((prev) =>
       prev.map((t) => {
@@ -229,10 +355,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       return { ...prev, liked: newLiked, isLiked: newLiked };
     });
 
-    // Persist to SQLite. The return value is the authoritative new state.
     try {
       const authoritative = await toggleLikeTrack(trackId);
-      // Reconcile with the DB result in case the optimistic value diverged.
       if (authoritative !== newLiked) {
         setTracks((prev) =>
           prev.map((t) =>
@@ -250,7 +374,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       return authoritative;
     } catch (err) {
       console.error('[AudioContext] toggleLike error:', err);
-      // Rollback the optimistic update
       const rolled = !newLiked;
       setTracks((prev) =>
         prev.map((t) =>
@@ -266,31 +389,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // playNext / playPrevious — wrap-around looping through the tracks array
-  // ---------------------------------------------------------------------------
-  const playNext = useCallback(async () => {
-    if (tracks.length === 0) return;
-    if (!currentTrack) {
-      await playTrack(tracks[0]);
-      return;
-    }
-    const idx = tracks.findIndex((t) => t.id === currentTrack.id);
-    const nextIdx = idx === -1 || idx === tracks.length - 1 ? 0 : idx + 1;
-    await playTrack(tracks[nextIdx]);
-  }, [tracks, currentTrack, playTrack]);
-
-  const playPrevious = useCallback(async () => {
-    if (tracks.length === 0) return;
-    if (!currentTrack) {
-      await playTrack(tracks[tracks.length - 1]);
-      return;
-    }
-    const idx = tracks.findIndex((t) => t.id === currentTrack.id);
-    const prevIdx = idx <= 0 ? tracks.length - 1 : idx - 1;
-    await playTrack(tracks[prevIdx]);
-  }, [tracks, currentTrack, playTrack]);
-
   return (
     <AudioContext.Provider
       value={{
@@ -300,6 +398,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         currentTime,
         duration,
         volume,
+        isShuffled,
+        repeatMode,
         playTrack,
         togglePlayPause,
         seekTo,
@@ -309,6 +409,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         refreshTracks,
         toggleLike,
         likedTracks: tracks.filter((t) => t.liked || t.isLiked),
+        playAll,
+        shuffleAll,
+        toggleShuffle,
+        toggleRepeat,
       }}
     >
       {children}
@@ -316,9 +420,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// useAudio hook
-// ---------------------------------------------------------------------------
 export function useAudio(): AudioContextValue {
   const ctx = useContext(AudioContext);
   if (!ctx) {

@@ -9,6 +9,7 @@ export const Colors = {
   danger: '#dc3545',     // Liked / heart red
   textPrimary: '#ffffff',
   textMuted: '#9e9e9e',
+  success: '#198754',    // Bootstrap Success Green
 } as const;
 
 export const Radii = {

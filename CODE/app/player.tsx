@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,10 @@ import {
   Image,
   PanResponder,
   type GestureResponderEvent,
-  type PanResponderGestureState,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Radii } from '../constants/theme';
+import { s, c } from '../styles/bootstrap';
 import { useAudio } from '../context/AudioContext';
 
 // ---------------------------------------------------------------------------
@@ -28,8 +28,7 @@ function clamp(val: number, min: number, max: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// Inline slider (no external dependencies)
-// PanResponder-based so it works on both iOS and Android.
+// Inline Slider (PanResponder based)
 // ---------------------------------------------------------------------------
 interface SliderProps {
   value: number;        // 0–1
@@ -72,20 +71,12 @@ function Slider({
       onValueChange(v);
     },
     onPanResponderMove: (evt) => {
-      const v = clamp(
-        (evt.nativeEvent.locationX) / trackWidth,
-        0,
-        1
-      );
+      const v = clamp(evt.nativeEvent.locationX / trackWidth, 0, 1);
       setSlideValue(v);
       onValueChange(v);
     },
     onPanResponderRelease: (evt) => {
-      const v = clamp(
-        (evt.nativeEvent.locationX) / trackWidth,
-        0,
-        1
-      );
+      const v = clamp(evt.nativeEvent.locationX / trackWidth, 0, 1);
       setSlideValue(v);
       setSliding(false);
       onSlidingComplete(v);
@@ -94,20 +85,17 @@ function Slider({
 
   return (
     <View
-      style={sliderStyles.track}
+      style={sliderStyles.trackContainer}
       onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
       {...panResponder.panHandlers}
     >
-      {/* Background track */}
       <View style={[sliderStyles.trackBg, { backgroundColor: trackColor }]} />
-      {/* Active / filled track */}
       <View
         style={[
           sliderStyles.trackFill,
           { width: `${displayValue * 100}%`, backgroundColor: activeTrackColor },
         ]}
       />
-      {/* Thumb */}
       <View
         style={[
           sliderStyles.thumb,
@@ -119,8 +107,8 @@ function Slider({
 }
 
 const sliderStyles = StyleSheet.create({
-  track: {
-    height: 28,
+  trackContainer: {
+    height: 32,
     justifyContent: 'center',
     position: 'relative',
   },
@@ -149,7 +137,7 @@ const sliderStyles = StyleSheet.create({
 });
 
 // ---------------------------------------------------------------------------
-// Player Screen
+// Player Modal Screen
 // ---------------------------------------------------------------------------
 export default function PlayerScreen() {
   const router = useRouter();
@@ -159,28 +147,39 @@ export default function PlayerScreen() {
     currentTime,
     duration,
     volume,
+    isShuffled,
+    repeatMode,
     togglePlayPause,
     seekTo,
     setVolume,
     playNext,
     playPrevious,
     toggleLike,
+    toggleShuffle,
+    toggleRepeat,
   } = useAudio();
 
   const isLiked = currentTrack ? (currentTrack.liked || currentTrack.isLiked || false) : false;
-
   const title = currentTrack?.title ?? 'No track selected';
   const artist = currentTrack?.artist ?? '—';
 
-  // Normalised progress (0–1). Guard against divide-by-zero.
   const progress = duration > 0 ? clamp(currentTime / duration, 0, 1) : 0;
   const remaining = duration > 0 ? Math.max(0, duration - currentTime) : 0;
 
-  // Progress slider handlers
-  const handleProgressChange = useCallback((_v: number) => {
-    // Provide live feedback during drag (no-op: context time won't update
-    // while sliding, so the slider thumb follows the gesture via slideValue)
-  }, []);
+  // Swipe-to-dismiss gesture responder
+  const swipePanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return gestureState.dy > 15 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 50 || gestureState.vy > 0.5) {
+          router.back();
+        }
+      },
+    })
+  ).current;
 
   const handleProgressComplete = useCallback(
     (normalised: number) => {
@@ -191,115 +190,163 @@ export default function PlayerScreen() {
     [duration, seekTo]
   );
 
-  // Volume slider handlers
-  const handleVolumeChange = useCallback(
-    (v: number) => {
-      setVolume(v);
-    },
-    [setVolume]
-  );
-
   return (
-    <View style={styles.container}>
-      {/* ── Dismiss chevron ── */}
+    <View
+      style={[styles.container, s.flex1, s.flexColumn, s.justifyContentBetween, s.px3, s.pb4]}
+      {...swipePanResponder.panHandlers}
+    >
+      {/* ── 1. Dismiss Chevron / Handle at top ── */}
       <TouchableOpacity
-        style={styles.dismissArea}
+        style={[styles.dismissArea, s.alignItemsCenter, s.py2, s.mb2]}
         onPress={() => router.back()}
         activeOpacity={0.6}
         accessibilityLabel="Close player"
       >
-        <View style={styles.dismissHandle} />
-        <Text style={styles.dismissLabel}>Player</Text>
+        <View style={[styles.dismissHandle, s.roundedPill]} />
+        <Text style={[styles.dismissLabel, s.textSecondary]}>Player</Text>
       </TouchableOpacity>
 
-      {/* ── Album Art ── */}
-      <View style={styles.albumArt}>
-        {currentTrack?.artworkUri ? (
-          <Image
-            source={{ uri: currentTrack.artworkUri }}
-            style={styles.albumArtImage}
+      {/* ── Main Vertical Content Stack ── */}
+      <View style={[s.flex1, s.flexColumn, s.justifyContentCenter, s.alignItemsCenter, s.w100]}>
+        {/* ── 2. Album Art (centered horizontally) ── */}
+        <View style={[styles.albumArt, s.roundedLg, s.alignItemsCenter, s.justifyContentCenter, s.alignSelfCenter, s.mb4]}>
+          {currentTrack?.artworkUri ? (
+            <Image source={{ uri: currentTrack.artworkUri }} style={styles.albumArtImage} />
+          ) : (
+            <Text style={styles.albumArtIcon}>♪</Text>
+          )}
+        </View>
+
+        {/* ── 3. Track Title + Artist (centered text) ── */}
+        <View style={[styles.trackInfo, s.alignItemsCenter, s.mb4, s.w100]}>
+          <Text style={[styles.trackTitle, s.textWhite, { textAlign: 'center' }]} numberOfLines={2}>
+            {title}
+          </Text>
+          <Text style={[styles.trackArtist, s.textSecondary, { textAlign: 'center' }]}>{artist}</Text>
+        </View>
+
+        {/* ── 4. Progress Slider with Time Labels ── */}
+        <View style={[styles.progressContainer, s.w100, s.mb4]}>
+          <Slider
+            value={progress}
+            onValueChange={() => {}}
+            onSlidingComplete={handleProgressComplete}
+            activeTrackColor={Colors.primary}
+            trackColor={Colors.border}
+            thumbColor={Colors.primary}
           />
-        ) : (
-          <Text style={styles.albumArtIcon}>♪</Text>
-        )}
-      </View>
+          <View style={[s.flexRow, s.justifyContentBetween, s.alignItemsCenter, s.mt1]}>
+            <Text style={[styles.timeText, s.textSecondary]}>{formatTime(currentTime)}</Text>
+            <Text style={[styles.timeText, s.textSecondary]}>-{formatTime(remaining)}</Text>
+          </View>
+        </View>
 
-      {/* ── Track info ── */}
-      <View style={styles.trackInfo}>
-        <Text style={styles.trackTitle} numberOfLines={2}>
-          {title}
-        </Text>
-        <Text style={styles.trackArtist}>{artist}</Text>
-      </View>
+        {/* ── 5. Playback Controls Row (previous, play/pause, next — evenly spaced) ── */}
+        <View style={[styles.playbackControls, s.flexRow, s.alignItemsCenter, s.justifyContentCenter, s.w100, s.mb4]}>
+          {/* Previous track */}
+          <TouchableOpacity
+            style={[styles.controlBtn, s.alignItemsCenter, s.justifyContentCenter]}
+            onPress={playPrevious}
+            accessibilityLabel="Previous track"
+          >
+            <Text style={[styles.controlIcon, s.textWhite, { color: '#ffffff' }]}>⏮</Text>
+          </TouchableOpacity>
 
-      {/* ── Progress bar with time labels ── */}
-      <View style={styles.progressContainer}>
-        <Slider
-          value={progress}
-          onValueChange={handleProgressChange}
-          onSlidingComplete={handleProgressComplete}
-          activeTrackColor={Colors.primary}
-          trackColor={Colors.border}
-          thumbColor={Colors.primary}
-        />
-        <View style={styles.progressTimes}>
-          <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-          <Text style={styles.timeText}>-{formatTime(remaining)}</Text>
+          {/* Play / Pause button */}
+          <TouchableOpacity
+            style={[styles.playBtn, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter]}
+            onPress={togglePlayPause}
+            disabled={!currentTrack}
+            activeOpacity={0.8}
+            accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
+          >
+            <Text style={[styles.playIcon, s.textWhite, { color: '#ffffff' }]}>
+              {isPlaying ? '⏸' : '▶'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Next track */}
+          <TouchableOpacity
+            style={[styles.controlBtn, s.alignItemsCenter, s.justifyContentCenter]}
+            onPress={playNext}
+            accessibilityLabel="Next track"
+          >
+            <Text style={[styles.controlIcon, s.textWhite, { color: '#ffffff' }]}>⏭</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── 6. Secondary Controls Row (shuffle, repeat, like — evenly spaced) ── */}
+        <View style={[styles.secondaryControls, s.flexRow, s.alignItemsCenter, s.justifyContentAround, s.w100, s.mb2]}>
+          {/* Shuffle button — reflects isShuffled state visually */}
+          <TouchableOpacity
+            style={[
+              styles.secondaryBtn,
+              s.alignItemsCenter,
+              s.justifyContentCenter,
+              isShuffled && styles.secondaryBtnActive,
+            ]}
+            onPress={toggleShuffle}
+            accessibilityLabel="Toggle shuffle"
+          >
+            <Text
+              style={[
+                styles.secondaryIcon,
+                { color: isShuffled ? Colors.primary : Colors.textMuted },
+              ]}
+            >
+              🔀
+            </Text>
+          </TouchableOpacity>
+
+          {/* Like / Unlike button */}
+          <TouchableOpacity
+            style={[styles.secondaryBtn, s.alignItemsCenter, s.justifyContentCenter]}
+            onPress={() => currentTrack && toggleLike(currentTrack.id)}
+            disabled={!currentTrack}
+            accessibilityLabel={isLiked ? 'Unlike track' : 'Like track'}
+          >
+            <Text style={[styles.secondaryIcon, isLiked && styles.secondaryIconLiked]}>
+              {isLiked ? '❤' : '🤍'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Repeat button with '1' badge when repeatMode === 'one' */}
+          <TouchableOpacity
+            style={[
+              styles.secondaryBtn,
+              s.alignItemsCenter,
+              s.justifyContentCenter,
+              repeatMode !== 'off' && styles.secondaryBtnActive,
+              { position: 'relative' },
+            ]}
+            onPress={toggleRepeat}
+            accessibilityLabel="Toggle repeat"
+          >
+            <Text
+              style={[
+                styles.secondaryIcon,
+                { color: repeatMode !== 'off' ? Colors.primary : Colors.textMuted },
+              ]}
+            >
+              🔁
+            </Text>
+            {repeatMode === 'one' && (
+              <View style={styles.repeatBadge}>
+                <Text style={styles.repeatBadgeText}>1</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* ── Playback controls ── */}
-      <View style={styles.controls}>
-        {/* Like / Unlike */}
-        <TouchableOpacity
-          style={styles.controlBtn}
-          onPress={() => currentTrack && toggleLike(currentTrack.id)}
-          disabled={!currentTrack}
-          accessibilityLabel={isLiked ? 'Unlike track' : 'Like track'}
-        >
-          <Text style={[styles.controlIcon, isLiked && styles.controlIconLiked]}>
-            {isLiked ? '❤' : '🤍'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Previous track */}
-        <TouchableOpacity
-          style={styles.controlBtn}
-          onPress={playPrevious}
-          accessibilityLabel="Previous track"
-        >
-          <Text style={styles.controlIcon}>⏮</Text>
-        </TouchableOpacity>
-
-        {/* Play / Pause */}
-        <TouchableOpacity
-          style={[styles.controlBtn, styles.playBtn]}
-          onPress={togglePlayPause}
-          disabled={!currentTrack}
-          activeOpacity={0.8}
-          accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
-        >
-          <Text style={styles.playIcon}>{isPlaying ? '⏸' : '▶'}</Text>
-        </TouchableOpacity>
-
-        {/* Next track */}
-        <TouchableOpacity
-          style={styles.controlBtn}
-          onPress={playNext}
-          accessibilityLabel="Next track"
-        >
-          <Text style={styles.controlIcon}>⏭</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* ── Volume slider ── */}
-      <View style={styles.volumeRow}>
+      {/* ── 7. Bottom Volume Slider ── */}
+      <View style={[styles.volumeRow, s.flexRow, s.alignItemsCenter, s.w100]}>
         <Text style={styles.volumeIcon}>🔈</Text>
-        <View style={styles.volumeSlider}>
+        <View style={s.flex1}>
           <Slider
             value={volume}
-            onValueChange={handleVolumeChange}
-            onSlidingComplete={handleVolumeChange}
+            onValueChange={setVolume}
+            onSlidingComplete={setVolume}
             activeTrackColor={Colors.textMuted}
             trackColor={Colors.border}
             thumbColor={Colors.textMuted}
@@ -311,106 +358,129 @@ export default function PlayerScreen() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Styles — identical structure to original, no visual change
-// ---------------------------------------------------------------------------
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    paddingHorizontal: 28,
-    paddingBottom: 40,
+    backgroundColor: '#1e1e1e',
   },
   dismissArea: {
-    alignItems: 'center',
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingTop: 12,
   },
   dismissHandle: {
-    width: 40,
+    width: 36,
     height: 4,
-    borderRadius: 2,
     backgroundColor: Colors.border,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   dismissLabel: {
     fontSize: 12,
     fontFamily: 'Inter',
-    color: Colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
   },
   albumArt: {
     width: '100%',
     aspectRatio: 1,
-    maxHeight: 280,
-    borderRadius: Radii.large,
+    maxHeight: 260,
     backgroundColor: Colors.background,
     borderWidth: 1,
     borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    marginVertical: 28,
     overflow: 'hidden',
   },
   albumArtImage: {
     width: '100%',
     height: '100%',
   },
-  albumArtIcon: { fontSize: 80, color: Colors.textMuted },
-  trackInfo: { marginBottom: 24 },
+  albumArtIcon: {
+    fontSize: 80,
+    color: Colors.textMuted,
+  },
+  trackInfo: {
+    paddingHorizontal: 12,
+  },
   trackTitle: {
     fontSize: 22,
     fontFamily: 'Inter-Bold',
     fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   trackArtist: {
     fontSize: 16,
     fontFamily: 'Inter',
-    color: Colors.textMuted,
   },
-  progressContainer: { marginBottom: 24 },
-  progressTimes: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 4,
+  progressContainer: {
+    width: '100%',
   },
   timeText: {
     fontSize: 12,
     fontFamily: 'Inter',
-    color: Colors.textMuted,
   },
-  controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 24,
-    marginBottom: 32,
+  playbackControls: {
+    gap: 28,
   },
   controlBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 48,
+    height: 48,
+  },
+  controlIcon: {
+    fontSize: 24,
+    color: '#ffffff',
+  },
+  playBtn: {
+    width: 64,
+    height: 64,
+    backgroundColor: Colors.primary,
+  },
+  playIcon: {
+    fontSize: 26,
+    color: '#ffffff',
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  secondaryControls: {
+    paddingHorizontal: 24,
+  },
+  secondaryBtn: {
+    minWidth: 44,
+    minHeight: 44,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  secondaryBtnActive: {
+    backgroundColor: 'rgba(13, 110, 253, 0.2)',
+    borderRadius: 22,
+  },
+  secondaryIcon: {
+    fontSize: 20,
+    color: Colors.textMuted,
+  },
+  secondaryIconActive: {
+    color: Colors.primary,
+  },
+  secondaryIconLiked: {
+    color: Colors.danger,
+  },
+  repeatBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: Colors.primary,
+    borderRadius: 6,
+    width: 12,
+    height: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  controlIcon: { fontSize: 24, color: Colors.textMuted },
-  controlIconLiked: { color: Colors.danger },
-  playBtn: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.primary,
+  repeatBadgeText: {
+    color: '#ffffff',
+    fontSize: 9,
+    fontFamily: 'Inter-Bold',
+    fontWeight: '700',
+    lineHeight: 10,
   },
-  playIcon: { fontSize: 28, color: Colors.textPrimary },
   volumeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 12,
   },
-  volumeIcon: { fontSize: 18 },
-  volumeSlider: { flex: 1 },
+  volumeIcon: {
+    fontSize: 18,
+  },
 });

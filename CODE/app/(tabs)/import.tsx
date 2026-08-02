@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Radii } from '../../constants/theme';
+import { s, c } from '../../styles/bootstrap';
 import { importAudioFiles } from '../../services/fileImporter';
 
 export default function ImportPage() {
@@ -14,20 +15,17 @@ export default function ImportPage() {
     try {
       const tracks = await importAudioFiles();
       if (tracks.length > 0) {
-        const message = tracks.length === 1
-          ? `"${tracks[0].title}" has been added to your library.`
-          : `Successfully imported ${tracks.length} tracks to your library.`;
+        const message =
+          tracks.length === 1
+            ? `"${tracks[0].title}" has been added to your library.`
+            : `Successfully imported ${tracks.length} tracks to your library.`;
 
-        Alert.alert(
-          '✅ Import Successful',
-          message,
-          [
-            {
-              text: 'Go to Library',
-              onPress: () => router.replace('/(tabs)/'),
-            },
-          ]
-        );
+        Alert.alert('✅ Import Successful', message, [
+          {
+            text: 'Go to Library',
+            onPress: () => router.replace('/(tabs)/'),
+          },
+        ]);
       }
     } catch (err) {
       console.error('[Import] Error importing files:', err);
@@ -38,35 +36,43 @@ export default function ImportPage() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Back button */}
+    <View style={[styles.container, s.flex1, s.bgDark, s.px3]}>
+      {/* Back button — Bootstrap btn-link style */}
       <TouchableOpacity
-        style={styles.backButton}
+        style={[styles.backButton, s.flexRow, s.alignItemsCenter, s.py2]}
         activeOpacity={0.7}
         onPress={() => router.back()}
       >
-        <Text style={styles.backArrow}>←</Text>
-        <Text style={styles.backText}>Library</Text>
+        <Text style={[styles.backArrow, s.textPrimary]}>←</Text>
+        <Text style={[styles.backText, s.textPrimary]}>Library</Text>
       </TouchableOpacity>
 
-      {/* Page title */}
-      <Text style={styles.pageTitle}>Import Music</Text>
-      <Text style={styles.pageSubtitle}>
+      {/* Page header */}
+      <Text style={[styles.pageTitle, s.textWhite, s.mt2, s.mb1]}>Import Music</Text>
+      <Text style={[styles.pageSubtitle, s.textSecondary, s.mb4]}>
         Add audio files from your device storage
       </Text>
 
-      {/* Drop zone / import area */}
-      <View style={styles.dropZone}>
-        <View style={styles.dropZoneInner}>
-          <Text style={styles.dropIcon}>{importing ? '⏳' : '📂'}</Text>
-          <Text style={styles.dropTitle}>
+      {/* Drop zone / import card with dashed border */}
+      <View style={[styles.dropZone, s.roundedLg, s.p1, s.mb4]}>
+        <View style={[styles.dropZoneInner, s.flex1, s.rounded, s.alignItemsCenter, s.justifyContentCenter, s.p4]}>
+          <Text style={[styles.dropIcon, s.mb3]}>{importing ? '⏳' : '📂'}</Text>
+          <Text style={[styles.dropTitle, s.textWhite, s.mb1]}>
             {importing ? 'Importing…' : 'Select a File'}
           </Text>
-          <Text style={styles.dropSubtitle}>Supported formats: mp3, m4a, flac, wav</Text>
+          <Text style={[styles.dropSubtitle, s.textSecondary, s.mb4]}>
+            Supported formats: mp3, m4a, flac, wav
+          </Text>
 
-          {/* Browse CTA */}
+          {/* Browse CTA — Bootstrap btn-primary pattern */}
           <TouchableOpacity
-            style={[styles.browseButton, importing && styles.browseButtonDisabled]}
+            style={[
+              styles.browseButton,
+              s.rounded,
+              s.alignItemsCenter,
+              s.justifyContentCenter,
+              importing && styles.browseButtonDisabled,
+            ]}
             activeOpacity={0.8}
             onPress={handleBrowse}
             disabled={importing}
@@ -74,15 +80,15 @@ export default function ImportPage() {
             {importing ? (
               <ActivityIndicator color={Colors.textPrimary} />
             ) : (
-              <Text style={styles.browseButtonText}>Browse Local Storage</Text>
+              <Text style={[styles.browseButtonText, s.textWhite]}>Browse Local Storage</Text>
             )}
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Info footer */}
-      <View style={styles.infoSection}>
-        <Text style={styles.infoText}>
+      {/* Info helper section */}
+      <View style={[styles.infoSection, s.py3]}>
+        <Text style={[styles.infoText, s.textSecondary]}>
           Selected files are copied into the app for permanent offline playback.
           Metadata such as title, artist, album, and artwork are extracted automatically.
         </Text>
@@ -93,85 +99,59 @@ export default function ImportPage() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: Colors.background,
-    paddingHorizontal: 20,
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 16,
-    paddingBottom: 8,
+    minHeight: 44,
   },
-  backArrow: { fontSize: 20, color: Colors.primary, marginRight: 6 },
+  backArrow: { fontSize: 20, marginRight: 6, color: Colors.primary },
   backText: { fontSize: 16, fontFamily: 'Inter', color: Colors.primary },
   pageTitle: {
     fontSize: 28,
     fontFamily: 'Inter-Bold',
     fontWeight: '700',
-    color: Colors.textPrimary,
-    marginTop: 8,
-    marginBottom: 6,
   },
   pageSubtitle: {
     fontSize: 14,
     fontFamily: 'Inter',
-    color: Colors.textMuted,
-    marginBottom: 32,
   },
   dropZone: {
     borderWidth: 2,
     borderColor: Colors.border,
     borderStyle: 'dashed',
-    borderRadius: Radii.large,
-    padding: 4,
-    flex: 1,
     maxHeight: 320,
   },
   dropZoneInner: {
-    flex: 1,
     backgroundColor: Colors.surface,
-    borderRadius: Radii.standard,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
   },
-  dropIcon: { fontSize: 48, marginBottom: 16 },
+  dropIcon: { fontSize: 48 },
   dropTitle: {
     fontSize: 20,
     fontFamily: 'Inter-Bold',
     fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 8,
   },
   dropSubtitle: {
     fontSize: 13,
     fontFamily: 'Inter',
-    color: Colors.textMuted,
-    marginBottom: 24,
   },
   browseButton: {
     backgroundColor: Colors.primary,
     paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: Radii.standard,
-    minWidth: 200,
-    alignItems: 'center',
+    minHeight: 48,
+    minWidth: 220,
   },
   browseButtonDisabled: {
-    backgroundColor: Colors.primary + '80',
+    backgroundColor: 'rgba(13, 110, 253, 0.5)',
   },
   browseButtonText: {
-    color: Colors.textPrimary,
     fontSize: 16,
     fontFamily: 'Inter-Bold',
     fontWeight: '600',
   },
-  infoSection: { paddingVertical: 24 },
+  infoSection: {},
   infoText: {
     fontSize: 13,
     fontFamily: 'Inter',
-    color: Colors.textMuted,
     lineHeight: 20,
     textAlign: 'center',
   },
