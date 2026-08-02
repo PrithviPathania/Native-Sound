@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '../constants/theme';
+import { Colors, Radii } from '../constants/theme';
 import { useAudio } from '../context/AudioContext';
 
 export default function MiniPlayer() {
@@ -21,7 +21,11 @@ export default function MiniPlayer() {
       >
         {/* Thumbnail */}
         <View style={styles.thumbnail}>
-          <Text style={styles.thumbnailIcon}>♪</Text>
+          {currentTrack.artworkUri ? (
+            <Image source={{ uri: currentTrack.artworkUri }} style={styles.thumbnailImage} />
+          ) : (
+            <Text style={styles.thumbnailIcon}>♪</Text>
+          )}
         </View>
 
         {/* Track title & artist */}
@@ -66,13 +70,18 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: 44,
     height: 44,
-    borderRadius: 8,
+    borderRadius: Radii.standard,
     backgroundColor: Colors.background,
     borderWidth: 1,
     borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    overflow: 'hidden',
+  },
+  thumbnailImage: {
+    width: '100%',
+    height: '100%',
   },
   thumbnailIcon: { fontSize: 18, color: Colors.textMuted },
   textBlock: { flex: 1 },

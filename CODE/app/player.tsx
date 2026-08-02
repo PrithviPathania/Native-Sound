@@ -4,16 +4,23 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Radii } from '../constants/theme';
 import { useAudio } from '../context/AudioContext';
 
+function formatDuration(seconds?: number): string {
+  if (!seconds || isNaN(seconds) || seconds <= 0) return '—:——';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+}
+
 export default function PlayerScreen() {
   const router = useRouter();
   const { currentTrack, isPlaying, togglePlayPause } = useAudio();
 
-  // Derive display values from the current track (or show placeholder).
   const title = currentTrack?.title ?? 'No track selected';
   const artist = currentTrack?.artist ?? '—';
 
@@ -29,9 +36,13 @@ export default function PlayerScreen() {
         <Text style={styles.dismissLabel}>Player</Text>
       </TouchableOpacity>
 
-      {/* Album Art placeholder */}
+      {/* Album Art */}
       <View style={styles.albumArt}>
-        <Text style={styles.albumArtIcon}>♪</Text>
+        {currentTrack?.artworkUri ? (
+          <Image source={{ uri: currentTrack.artworkUri }} style={styles.albumArtImage} />
+        ) : (
+          <Text style={styles.albumArtIcon}>♪</Text>
+        )}
       </View>
 
       {/* Track info */}
@@ -74,7 +85,7 @@ export default function PlayerScreen() {
         </View>
         <View style={styles.progressTimes}>
           <Text style={styles.timeText}>0:00</Text>
-          <Text style={styles.timeText}>—:——</Text>
+          <Text style={styles.timeText}>{formatDuration(currentTrack?.duration)}</Text>
         </View>
       </View>
 
@@ -128,6 +139,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'center',
     marginVertical: 28,
+    overflow: 'hidden',
+  },
+  albumArtImage: {
+    width: '100%',
+    height: '100%',
   },
   albumArtIcon: { fontSize: 80, color: Colors.textMuted },
   trackInfo: { marginBottom: 32 },

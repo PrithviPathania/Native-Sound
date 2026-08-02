@@ -1,48 +1,37 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   FlatList,
   StyleSheet,
-  Alert,
   ActivityIndicator,
+  Image,
+  RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Radii } from '../../constants/theme';
-import { getAllTracks } from '../../services/database';
+import { useAudioLibrary } from '../../hooks/useAudioLibrary';
 import { useAudio } from '../../context/AudioContext';
 import type { Track } from '../../types/track';
+
+function formatDuration(seconds?: number): string {
+  if (!seconds || isNaN(seconds) || seconds <= 0) return '0:00';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+}
 
 export default function LibraryPage() {
   const router = useRouter();
   const { playTrack, currentTrack, isPlaying } = useAudio();
+  const { tracks, loading, refreshing, refreshLibrary } = useAudioLibrary();
 
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Reload the track list every time this screen comes into focus
-  // (e.g. after returning from the Import page with a new track).
+  // Re-fetch library every time screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      let cancelled = false;
-      (async () => {
-        try {
-          setLoading(true);
-          const data = await getAllTracks();
-          if (!cancelled) setTracks(data);
-        } catch (err) {
-          console.error('[Library] Failed to load tracks:', err);
-          Alert.alert('Error', 'Could not load your library.');
-        } finally {
-          if (!cancelled) setLoading(false);
-        }
-      })();
-      return () => {
-        cancelled = true;
-      };
-    }, [])
+      refreshLibrary();
+    }, [refreshLibrary])
   );
 
   const handleTrackPress = (track: Track) => {
@@ -50,9 +39,6 @@ export default function LibraryPage() {
     router.push('/player');
   };
 
-  // ---------------------------------------------------------------------------
-  // Render helpers
-  // ---------------------------------------------------------------------------
   const renderTrack = ({ item }: { item: Track }) => {
     const isActive = currentTrack?.id === item.id;
     return (
@@ -61,9 +47,13 @@ export default function LibraryPage() {
         activeOpacity={0.7}
         onPress={() => handleTrackPress(item)}
       >
-        {/* Album art placeholder */}
+        {/* Album art thumbnail / placeholder */}
         <View style={[styles.trackThumb, isActive && styles.trackThumbActive]}>
-          <Text style={styles.trackThumbIcon}>{isActive && isPlaying ? '▶' : '♪'}</Text>
+          {item.artworkUri ? (
+            <Image source={{ uri: item.artworkUri }} style={styles.trackThumbImage} />
+          ) : (
+            <Text style={styles.trackThumbIcon}>{isActive && isPlaying ? '▶' : '♪'}</Text>
+          )}
         </View>
 
         <View style={styles.trackInfo}>
@@ -78,7 +68,9 @@ export default function LibraryPage() {
           </Text>
         </View>
 
-        {item.isLiked && <Text style={styles.heartBadge}>❤</Text>}
+        <Text style={styles.trackDuration}>{formatDuration(item.duration)}</Text>
+
+        {(item.liked || item.isLiked) && <Text style={styles.heartBadge}>❤</Text>}
       </TouchableOpacity>
     );
   };
@@ -119,7 +111,7 @@ export default function LibraryPage() {
       </View>
 
       {/* Track list / empty state */}
-      {loading ? (
+      {loading && tracks.length === 0 ? (
         <View style={styles.center}>
           <ActivityIndicator color={Colors.primary} size="large" />
         </View>
@@ -140,6 +132,14 @@ export default function LibraryPage() {
           renderItem={renderTrack}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={refreshLibrary}
+              tintColor={Colors.primary}
+              colors={[Colors.primary]}
+            />
+          }
         />
       )}
     </View>
@@ -260,10 +260,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
+    overflow: 'hidden',
   },
   trackThumbActive: {
     backgroundColor: Colors.primary + '30',
     borderColor: Colors.primary,
+  },
+  trackThumbImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: Radii.standard,
   },
   trackThumbIcon: { fontSize: 18, color: Colors.textMuted },
   trackInfo: { flex: 1 },
@@ -279,6 +285,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Inter',
     color: Colors.textMuted,
+  },
+  trackDuration: {
+    fontSize: 12,
+    fontFamily: 'Inter',
+    color: Colors.textMuted,
+    marginLeft: 8,
   },
   heartBadge: {
     fontSize: 14,

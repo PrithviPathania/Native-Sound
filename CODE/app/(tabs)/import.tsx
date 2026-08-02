@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Radii } from '../../constants/theme';
-import { importAudioFile } from '../../services/fileImporter';
+import { importAudioFiles } from '../../services/fileImporter';
 
 export default function ImportPage() {
   const router = useRouter();
@@ -12,18 +12,26 @@ export default function ImportPage() {
     if (importing) return;
     setImporting(true);
     try {
-      const track = await importAudioFile();
-      if (track) {
+      const tracks = await importAudioFiles();
+      if (tracks.length > 0) {
+        const message = tracks.length === 1
+          ? `"${tracks[0].title}" has been added to your library.`
+          : `Successfully imported ${tracks.length} tracks to your library.`;
+
         Alert.alert(
           '✅ Import Successful',
-          `"${track.title}" has been added to your library.`,
-          [{ text: 'Go to Library', onPress: () => router.back() }]
+          message,
+          [
+            {
+              text: 'Go to Library',
+              onPress: () => router.replace('/(tabs)/'),
+            },
+          ]
         );
       }
-      // If track is null the user cancelled — do nothing.
     } catch (err) {
-      console.error('[Import] importAudioFile error:', err);
-      Alert.alert('Import Failed', 'Something went wrong while importing the file.');
+      console.error('[Import] Error importing files:', err);
+      Alert.alert('Import Failed', 'Something went wrong while importing your audio file(s).');
     } finally {
       setImporting(false);
     }
@@ -76,7 +84,7 @@ export default function ImportPage() {
       <View style={styles.infoSection}>
         <Text style={styles.infoText}>
           Selected files are copied into the app for permanent offline playback.
-          Metadata such as title and artist will be refined in a future update.
+          Metadata such as title, artist, album, and artwork are extracted automatically.
         </Text>
       </View>
     </View>

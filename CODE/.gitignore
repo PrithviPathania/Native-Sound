@@ -39,3 +39,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Audio files (user-imported, belong on device not in repo just adding to ignore incase there is some code issues when testing)
+*.mp3
