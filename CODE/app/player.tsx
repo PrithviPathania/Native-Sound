@@ -162,6 +162,8 @@ export default function PlayerScreen() {
     togglePlayPause,
     seekTo,
     setVolume,
+    playNext,
+    playPrevious,
   } = useAudio();
 
   const title = currentTrack?.title ?? 'No track selected';
@@ -245,9 +247,10 @@ export default function PlayerScreen() {
 
       {/* ── Playback controls ── */}
       <View style={styles.controls}>
-        {/* Skip back — placeholder */}
+        {/* Previous track */}
         <TouchableOpacity
           style={styles.controlBtn}
+          onPress={playPrevious}
           accessibilityLabel="Previous track"
         >
           <Text style={styles.controlIcon}>⏮</Text>
@@ -264,9 +267,10 @@ export default function PlayerScreen() {
           <Text style={styles.playIcon}>{isPlaying ? '⏸' : '▶'}</Text>
         </TouchableOpacity>
 
-        {/* Skip forward — placeholder */}
+        {/* Next track */}
         <TouchableOpacity
           style={styles.controlBtn}
+          onPress={playNext}
           accessibilityLabel="Next track"
         >
           <Text style={styles.controlIcon}>⏭</Text>

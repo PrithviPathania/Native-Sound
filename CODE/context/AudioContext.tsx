@@ -19,12 +19,14 @@ import { Alert } from 'react-native';
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import type { AudioPlayer, AudioStatus } from 'expo-audio';
 import type { Track } from '../types/track';
+import { getAllTracks } from '../services/database';
 
 // ---------------------------------------------------------------------------
 // Context shape
 // ---------------------------------------------------------------------------
 export interface AudioContextValue {
   currentTrack: Track | null;
+  tracks: Track[];         // All tracks loaded from SQLite
   isPlaying: boolean;
   currentTime: number;   // seconds
   duration: number;      // seconds (0 when unknown)
@@ -33,6 +35,9 @@ export interface AudioContextValue {
   togglePlayPause: () => void;
   seekTo: (seconds: number) => Promise<void>;
   setVolume: (vol: number) => void;
+  playNext: () => Promise<void>;
+  playPrevious: () => Promise<void>;
+  refreshTracks: () => Promise<void>;
 }
 
 const AudioContext = createContext<AudioContextValue | null>(null);
@@ -42,6 +47,7 @@ const AudioContext = createContext<AudioContextValue | null>(null);
 // ---------------------------------------------------------------------------
 export function AudioProvider({ children }: { children: ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
+  const [tracks, setTracks] = useState<Track[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -51,7 +57,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const playerRef = useRef<AudioPlayer | null>(null);
 
   // ---------------------------------------------------------------------------
-  // One-time audio session configuration
+  // One-time audio session configuration + initial track load
   // ---------------------------------------------------------------------------
   useEffect(() => {
     setAudioModeAsync({
@@ -60,6 +66,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       interruptionMode: 'doNotMix',
     });
 
+    // Load all tracks from SQLite so playNext/playPrevious can navigate them.
+    getAllTracks()
+      .then(setTracks)
+      .catch((err) => console.error('[AudioContext] Failed to load tracks:', err));
+
     return () => {
       // Release player when the provider tree unmounts (app close).
       if (playerRef.current) {
@@ -67,6 +78,18 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         playerRef.current = null;
       }
     };
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // refreshTracks — call after importing new tracks
+  // ---------------------------------------------------------------------------
+  const refreshTracks = useCallback(async () => {
+    try {
+      const latest = await getAllTracks();
+      setTracks(latest);
+    } catch (err) {
+      console.error('[AudioContext] refreshTracks error:', err);
+    }
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -182,10 +205,36 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // ---------------------------------------------------------------------------
+  // playNext / playPrevious — wrap-around looping through the tracks array
+  // ---------------------------------------------------------------------------
+  const playNext = useCallback(async () => {
+    if (tracks.length === 0) return;
+    if (!currentTrack) {
+      await playTrack(tracks[0]);
+      return;
+    }
+    const idx = tracks.findIndex((t) => t.id === currentTrack.id);
+    const nextIdx = idx === -1 || idx === tracks.length - 1 ? 0 : idx + 1;
+    await playTrack(tracks[nextIdx]);
+  }, [tracks, currentTrack, playTrack]);
+
+  const playPrevious = useCallback(async () => {
+    if (tracks.length === 0) return;
+    if (!currentTrack) {
+      await playTrack(tracks[tracks.length - 1]);
+      return;
+    }
+    const idx = tracks.findIndex((t) => t.id === currentTrack.id);
+    const prevIdx = idx <= 0 ? tracks.length - 1 : idx - 1;
+    await playTrack(tracks[prevIdx]);
+  }, [tracks, currentTrack, playTrack]);
+
   return (
     <AudioContext.Provider
       value={{
         currentTrack,
+        tracks,
         isPlaying,
         currentTime,
         duration,
@@ -194,6 +243,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         togglePlayPause,
         seekTo,
         setVolume,
+        playNext,
+        playPrevious,
+        refreshTracks,
       }}
     >
       {children}
