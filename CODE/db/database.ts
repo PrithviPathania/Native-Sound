@@ -132,6 +132,38 @@ export async function getAllTracks(): Promise<Track[]> {
 }
 
 // ---------------------------------------------------------------------------
+// getLikedTracks
+// ---------------------------------------------------------------------------
+export async function getLikedTracks(): Promise<Track[]> {
+  const database = await getDb();
+  const rows = await database.getAllAsync<{
+    id: number;
+    title: string;
+    artist: string;
+    album: string | null;
+    file_uri: string;
+    duration: number | null;
+    artwork_uri: string | null;
+    is_liked: number;
+    date_added: string | null;
+  }>('SELECT * FROM tracks WHERE is_liked = 1 ORDER BY date_added DESC');
+
+  return rows.map((row) => ({
+    id: row.id,
+    uri: row.file_uri,
+    fileUri: row.file_uri,
+    title: row.title,
+    artist: row.artist,
+    album: row.album ?? 'Unknown Album',
+    duration: row.duration ?? undefined,
+    artworkUri: row.artwork_uri ?? undefined,
+    liked: true,
+    isLiked: true,
+    dateAdded: row.date_added ?? undefined,
+  }));
+}
+
+// ---------------------------------------------------------------------------
 // toggleLikeTrack
 // ---------------------------------------------------------------------------
 export async function toggleLikeTrack(id: number): Promise<boolean> {

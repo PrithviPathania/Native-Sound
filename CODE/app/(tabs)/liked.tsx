@@ -1,14 +1,21 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, ActivityIndicator, Image } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Radii } from '../../constants/theme';
-import { getAllTracks, toggleLikeTrack } from '../../services/database';
+import { getLikedTracks } from '../../services/database';
 import { useAudio } from '../../context/AudioContext';
 import type { Track } from '../../types/track';
 
+function formatDuration(seconds?: number): string {
+  if (!seconds || isNaN(seconds) || seconds <= 0) return '0:00';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+}
+
 export default function LikedSongsPage() {
   const router = useRouter();
-  const { playTrack, currentTrack, isPlaying } = useAudio();
+  const { playTrack, currentTrack, isPlaying, toggleLike } = useAudio();
 
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,8 +27,7 @@ export default function LikedSongsPage() {
       (async () => {
         try {
           setLoading(true);
-          const all = await getAllTracks();
-          const liked = all.filter((t) => t.isLiked);
+          const liked = await getLikedTracks();
           if (!cancelled) setTracks(liked);
         } catch (err) {
           console.error('[Liked] Failed to load:', err);
@@ -40,9 +46,13 @@ export default function LikedSongsPage() {
 
   const handleUnlike = async (track: Track) => {
     try {
-      await toggleLikeTrack(track.id);
+      // Remove from local list immediately for instant feedback
       setTracks((prev) => prev.filter((t) => t.id !== track.id));
+      // Sync with DB and global context state
+      await toggleLike(track.id);
     } catch (err) {
+      // Re-add to list on failure
+      setTracks((prev) => [track, ...prev]);
       Alert.alert('Error', 'Could not update liked status.');
     }
   };
@@ -56,7 +66,11 @@ export default function LikedSongsPage() {
         onPress={() => handleTrackPress(item)}
       >
         <View style={[styles.trackThumb, isActive && styles.trackThumbActive]}>
-          <Text style={styles.trackThumbIcon}>{isActive && isPlaying ? '▶' : '♪'}</Text>
+          {item.artworkUri ? (
+            <Image source={{ uri: item.artworkUri }} style={styles.trackThumbImage} />
+          ) : (
+            <Text style={styles.trackThumbIcon}>{isActive && isPlaying ? '▶' : '♪'}</Text>
+          )}
         </View>
         <View style={styles.trackInfo}>
           <Text style={[styles.trackTitle, isActive && styles.trackTitleActive]} numberOfLines={1}>
@@ -64,6 +78,7 @@ export default function LikedSongsPage() {
           </Text>
           <Text style={styles.trackArtist} numberOfLines={1}>{item.artist}</Text>
         </View>
+        <Text style={styles.trackDuration}>{formatDuration(item.duration)}</Text>
         <TouchableOpacity onPress={() => handleUnlike(item)} style={styles.heartBtn}>
           <Text style={styles.heartIcon}>❤</Text>
         </TouchableOpacity>
@@ -196,10 +211,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
+    overflow: 'hidden',
   },
   trackThumbActive: {
     backgroundColor: Colors.primary + '30',
     borderColor: Colors.primary,
+  },
+  trackThumbImage: {
+    width: '100%',
+    height: '100%',
   },
   trackThumbIcon: { fontSize: 18, color: Colors.textMuted },
   trackInfo: { flex: 1 },
@@ -212,6 +232,12 @@ const styles = StyleSheet.create({
   },
   trackTitleActive: { color: Colors.primary },
   trackArtist: { fontSize: 13, fontFamily: 'Inter', color: Colors.textMuted },
+  trackDuration: {
+    fontSize: 12,
+    fontFamily: 'Inter',
+    color: Colors.textMuted,
+    marginLeft: 8,
+  },
   heartBtn: { padding: 8 },
   heartIcon: { fontSize: 18, color: Colors.danger },
 });

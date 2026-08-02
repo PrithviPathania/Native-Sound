@@ -19,7 +19,7 @@ import { Alert } from 'react-native';
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import type { AudioPlayer, AudioStatus } from 'expo-audio';
 import type { Track } from '../types/track';
-import { getAllTracks } from '../services/database';
+import { getAllTracks, toggleLikeTrack } from '../services/database';
 
 // ---------------------------------------------------------------------------
 // Context shape
@@ -38,6 +38,8 @@ export interface AudioContextValue {
   playNext: () => Promise<void>;
   playPrevious: () => Promise<void>;
   refreshTracks: () => Promise<void>;
+  toggleLike: (trackId: number) => Promise<boolean>;
+  likedTracks: Track[];
 }
 
 const AudioContext = createContext<AudioContextValue | null>(null);
@@ -206,6 +208,65 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ---------------------------------------------------------------------------
+  // toggleLike — optimistic in-memory update + SQLite write
+  // ---------------------------------------------------------------------------
+  // Updates the `liked`/`isLiked` fields on the matching track in the `tracks`
+  // array and on `currentTrack` (if it matches) without any re-fetch, so all
+  // consumers — Library, Player, Liked Songs — update instantly.
+  const toggleLike = useCallback(async (trackId: number): Promise<boolean> => {
+    // Optimistically flip the state in memory first for instant UI feedback.
+    let newLiked = false;
+    setTracks((prev) =>
+      prev.map((t) => {
+        if (t.id !== trackId) return t;
+        newLiked = !(t.liked ?? t.isLiked ?? false);
+        return { ...t, liked: newLiked, isLiked: newLiked };
+      })
+    );
+    setCurrentTrack((prev) => {
+      if (!prev || prev.id !== trackId) return prev;
+      newLiked = !(prev.liked ?? prev.isLiked ?? false);
+      return { ...prev, liked: newLiked, isLiked: newLiked };
+    });
+
+    // Persist to SQLite. The return value is the authoritative new state.
+    try {
+      const authoritative = await toggleLikeTrack(trackId);
+      // Reconcile with the DB result in case the optimistic value diverged.
+      if (authoritative !== newLiked) {
+        setTracks((prev) =>
+          prev.map((t) =>
+            t.id === trackId
+              ? { ...t, liked: authoritative, isLiked: authoritative }
+              : t
+          )
+        );
+        setCurrentTrack((prev) =>
+          prev && prev.id === trackId
+            ? { ...prev, liked: authoritative, isLiked: authoritative }
+            : prev
+        );
+      }
+      return authoritative;
+    } catch (err) {
+      console.error('[AudioContext] toggleLike error:', err);
+      // Rollback the optimistic update
+      const rolled = !newLiked;
+      setTracks((prev) =>
+        prev.map((t) =>
+          t.id === trackId ? { ...t, liked: rolled, isLiked: rolled } : t
+        )
+      );
+      setCurrentTrack((prev) =>
+        prev && prev.id === trackId
+          ? { ...prev, liked: rolled, isLiked: rolled }
+          : prev
+      );
+      throw err;
+    }
+  }, []);
+
+  // ---------------------------------------------------------------------------
   // playNext / playPrevious — wrap-around looping through the tracks array
   // ---------------------------------------------------------------------------
   const playNext = useCallback(async () => {
@@ -246,6 +307,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         playNext,
         playPrevious,
         refreshTracks,
+        toggleLike,
+        likedTracks: tracks.filter((t) => t.liked || t.isLiked),
       }}
     >
       {children}

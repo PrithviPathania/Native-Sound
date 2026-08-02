@@ -164,7 +164,10 @@ export default function PlayerScreen() {
     setVolume,
     playNext,
     playPrevious,
+    toggleLike,
   } = useAudio();
+
+  const isLiked = currentTrack ? (currentTrack.liked || currentTrack.isLiked || false) : false;
 
   const title = currentTrack?.title ?? 'No track selected';
   const artist = currentTrack?.artist ?? '—';
@@ -247,6 +250,18 @@ export default function PlayerScreen() {
 
       {/* ── Playback controls ── */}
       <View style={styles.controls}>
+        {/* Like / Unlike */}
+        <TouchableOpacity
+          style={styles.controlBtn}
+          onPress={() => currentTrack && toggleLike(currentTrack.id)}
+          disabled={!currentTrack}
+          accessibilityLabel={isLiked ? 'Unlike track' : 'Like track'}
+        >
+          <Text style={[styles.controlIcon, isLiked && styles.controlIconLiked]}>
+            {isLiked ? '❤' : '🤍'}
+          </Text>
+        </TouchableOpacity>
+
         {/* Previous track */}
         <TouchableOpacity
           style={styles.controlBtn}
@@ -383,6 +398,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   controlIcon: { fontSize: 24, color: Colors.textMuted },
+  controlIconLiked: { color: Colors.danger },
   playBtn: {
     width: 72,
     height: 72,

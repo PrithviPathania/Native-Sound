@@ -24,7 +24,7 @@ function formatDuration(seconds?: number): string {
 
 export default function LibraryPage() {
   const router = useRouter();
-  const { playTrack, currentTrack, isPlaying } = useAudio();
+  const { playTrack, currentTrack, isPlaying, toggleLike } = useAudio();
   const { tracks, loading, refreshing, refreshLibrary } = useAudioLibrary();
 
   // Re-fetch library every time screen comes into focus
@@ -70,7 +70,20 @@ export default function LibraryPage() {
 
         <Text style={styles.trackDuration}>{formatDuration(item.duration)}</Text>
 
-        {(item.liked || item.isLiked) && <Text style={styles.heartBadge}>❤</Text>}
+        <TouchableOpacity
+          style={styles.heartBtn}
+          onPress={(e) => { e.stopPropagation(); toggleLike(item.id); }}
+          activeOpacity={0.7}
+          accessibilityLabel={(item.liked || item.isLiked) ? 'Unlike track' : 'Like track'}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={[
+            styles.heartBadge,
+            !(item.liked || item.isLiked) && styles.heartBadgeUnliked,
+          ]}>
+            {(item.liked || item.isLiked) ? '❤' : '🤍'}
+          </Text>
+        </TouchableOpacity>
       </TouchableOpacity>
     );
   };
@@ -293,8 +306,15 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   heartBadge: {
-    fontSize: 14,
+    fontSize: 16,
     color: Colors.danger,
-    marginLeft: 8,
+  },
+  heartBadgeUnliked: {
+    color: Colors.textMuted,
+    opacity: 0.5,
+  },
+  heartBtn: {
+    padding: 4,
+    marginLeft: 4,
   },
 });
