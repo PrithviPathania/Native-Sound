@@ -4,6 +4,7 @@
 import * as SQLite from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system/legacy';
 import type { Track } from '../types/track';
+import { readAudioDurationAsync } from '../services/fileImporter';
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -34,7 +35,7 @@ export async function initDatabase(): Promise<void> {
     );
   `);
 
-  // Run safe migrations if table pre-existed with older columns
+  // Safe migrations if table pre-existed with older columns
   try {
     await database.execAsync(`ALTER TABLE tracks ADD COLUMN album TEXT DEFAULT 'Unknown Album';`);
   } catch {}
@@ -44,6 +45,33 @@ export async function initDatabase(): Promise<void> {
   try {
     await database.execAsync(`ALTER TABLE tracks ADD COLUMN date_added TEXT DEFAULT (datetime('now'));`);
   } catch {}
+
+  // Background migration: re-scan and fix any legacy songs stored with duration: 0 or NULL
+  fixMissingDurations().catch((err) =>
+    console.warn('[DB] Background duration fix error:', err)
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Fix Missing Durations Migration
+// ---------------------------------------------------------------------------
+export async function fixMissingDurations(): Promise<void> {
+  try {
+    const database = await getDb();
+    const rows = await database.getAllAsync<{ id: number; file_uri: string }>(
+      'SELECT id, file_uri FROM tracks WHERE duration IS NULL OR duration <= 0'
+    );
+    for (const row of rows) {
+      if (row.file_uri) {
+        const dur = await readAudioDurationAsync(row.file_uri);
+        if (dur > 0) {
+          await updateTrackDuration(row.id, dur);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[DB] Error fixing missing durations:', err);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -67,7 +95,7 @@ export async function insertTrack(data: InsertTrackData): Promise<Track> {
   const artist = data.artist || 'Unknown Artist';
   const album = data.album || 'Unknown Album';
   const fileUri = data.fileUri;
-  const duration = data.duration ?? null;
+  const duration = data.duration && data.duration > 0 ? Math.round(data.duration) : 0;
   const artworkUri = data.artworkUri ?? null;
   const dateAdded = new Date().toISOString();
 
@@ -91,12 +119,20 @@ export async function insertTrack(data: InsertTrackData): Promise<Track> {
     title,
     artist,
     album,
-    duration: duration ?? undefined,
+    duration,
     artworkUri: artworkUri ?? undefined,
     liked: false,
     isLiked: false,
     dateAdded,
   };
+}
+
+// ---------------------------------------------------------------------------
+// updateTrackDuration
+// ---------------------------------------------------------------------------
+export async function updateTrackDuration(id: number, duration: number): Promise<void> {
+  const database = await getDb();
+  await database.runAsync('UPDATE tracks SET duration = ? WHERE id = ?', duration, id);
 }
 
 // ---------------------------------------------------------------------------
@@ -123,7 +159,7 @@ export async function getAllTracks(): Promise<Track[]> {
     title: row.title,
     artist: row.artist,
     album: row.album ?? 'Unknown Album',
-    duration: row.duration ?? undefined,
+    duration: row.duration && row.duration > 0 ? Math.round(row.duration) : 0,
     artworkUri: row.artwork_uri ?? undefined,
     liked: row.is_liked === 1,
     isLiked: row.is_liked === 1,
@@ -155,7 +191,7 @@ export async function getLikedTracks(): Promise<Track[]> {
     title: row.title,
     artist: row.artist,
     album: row.album ?? 'Unknown Album',
-    duration: row.duration ?? undefined,
+    duration: row.duration && row.duration > 0 ? Math.round(row.duration) : 0,
     artworkUri: row.artwork_uri ?? undefined,
     liked: true,
     isLiked: true,
@@ -190,7 +226,6 @@ export async function deleteTrack(id: number): Promise<void> {
   );
 
   if (row) {
-    // Delete local audio file
     if (row.file_uri) {
       try {
         await FileSystem.deleteAsync(row.file_uri, { idempotent: true });
@@ -198,7 +233,6 @@ export async function deleteTrack(id: number): Promise<void> {
         console.warn(`[DB] Failed to delete audio file: ${row.file_uri}`, err);
       }
     }
-    // Delete artwork file if saved locally
     if (row.artwork_uri && row.artwork_uri.startsWith('file://')) {
       try {
         await FileSystem.deleteAsync(row.artwork_uri, { idempotent: true });

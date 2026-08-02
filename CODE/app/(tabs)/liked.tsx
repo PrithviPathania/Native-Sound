@@ -7,11 +7,11 @@ import { getLikedTracks } from '../../services/database';
 import { useAudio } from '../../context/AudioContext';
 import type { Track } from '../../types/track';
 
-function formatDuration(seconds?: number): string {
-  if (!seconds || isNaN(seconds) || seconds <= 0) return '0:00';
+export function formatDuration(seconds?: number): string {
+  if (!seconds || seconds <= 0 || isNaN(seconds)) return '0:00';
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 export default function LikedSongsPage() {
