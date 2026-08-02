@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Radii } from '../../constants/theme';
-import { useAudioLibrary } from '../../hooks/useAudioLibrary';
 import { useAudio } from '../../context/AudioContext';
 import type { Track } from '../../types/track';
 
@@ -24,15 +23,22 @@ function formatDuration(seconds?: number): string {
 
 export default function LibraryPage() {
   const router = useRouter();
-  const { playTrack, currentTrack, isPlaying, toggleLike } = useAudio();
-  const { tracks, loading, refreshing, refreshLibrary } = useAudioLibrary();
+  const { playTrack, currentTrack, isPlaying, toggleLike, tracks, refreshTracks } = useAudio();
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Re-fetch library every time screen comes into focus
+  // Re-fetch from SQLite into AudioContext every time this screen comes into focus.
+  // Because tracks comes from AudioContext, toggleLike updates are reflected immediately.
   useFocusEffect(
     useCallback(() => {
-      refreshLibrary();
-    }, [refreshLibrary])
+      refreshTracks();
+    }, [refreshTracks])
   );
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refreshTracks();
+    setRefreshing(false);
+  }, [refreshTracks]);
 
   const handleTrackPress = (track: Track) => {
     playTrack(track);
@@ -124,11 +130,7 @@ export default function LibraryPage() {
       </View>
 
       {/* Track list / empty state */}
-      {loading && tracks.length === 0 ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={Colors.primary} size="large" />
-        </View>
-      ) : tracks.length === 0 ? (
+      {tracks.length === 0 ? (
         <View style={styles.emptyState}>
           <View style={styles.emptyIconContainer}>
             <Text style={styles.emptyIcon}>♪</Text>
@@ -148,7 +150,7 @@ export default function LibraryPage() {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={refreshLibrary}
+              onRefresh={handleRefresh}
               tintColor={Colors.primary}
               colors={[Colors.primary]}
             />
