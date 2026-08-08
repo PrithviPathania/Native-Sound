@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/theme';
-import { s, c } from '../styles/bootstrap';
+import { s } from '../styles/bootstrap';
 import { useAudio } from '../context/AudioContext';
 
 function clamp(val: number, min: number, max: number): number {
@@ -40,7 +41,7 @@ export default function MiniPlayer() {
           {currentTrack.artworkUri ? (
             <Image source={{ uri: currentTrack.artworkUri }} style={styles.thumbnailImage} />
           ) : (
-            <Text style={styles.thumbnailIcon}>♪</Text>
+            <Ionicons name="musical-note" size={20} color="#ffffff" />
           )}
         </View>
 
@@ -62,7 +63,7 @@ export default function MiniPlayer() {
         onPress={togglePlayPause}
         accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
       >
-        <Text style={styles.playIcon}>{isPlaying ? '⏸' : '▶'}</Text>
+        <Ionicons name={isPlaying ? 'pause' : 'play'} size={20} color="#ffffff" />
       </TouchableOpacity>
     </View>
   );
@@ -105,10 +106,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  thumbnailIcon: {
-    fontSize: 16,
-    color: Colors.textMuted,
-  },
   title: {
     fontSize: 14,
     fontFamily: 'Inter-Bold',
@@ -125,9 +122,5 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: Colors.primary,
     marginLeft: 12,
-  },
-  playIcon: {
-    fontSize: 16,
-    color: Colors.textPrimary,
   },
 });

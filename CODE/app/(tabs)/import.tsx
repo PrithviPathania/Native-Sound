@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radii } from '../../constants/theme';
 import { s } from '../../styles/bootstrap';
 import { importAudioFiles } from '../../services/fileImporter';
@@ -43,7 +44,7 @@ export default function ImportPage() {
         activeOpacity={0.7}
         onPress={() => router.back()}
       >
-        <Text style={[styles.backArrow, s.textPrimary]}>←</Text>
+        <Ionicons name="chevron-back" size={20} color={Colors.primary} style={styles.backArrow} />
         <Text style={[styles.backText, s.textPrimary]}>Library</Text>
       </TouchableOpacity>
 
@@ -56,7 +57,12 @@ export default function ImportPage() {
       {/* Drop zone / import card with dashed border */}
       <View style={styles.dropZone}>
         <View style={[styles.dropZoneInner, s.alignItemsCenter, s.justifyContentCenter]}>
-          <Text style={[styles.dropIcon, s.mb3]}>{importing ? '⏳' : '📂'}</Text>
+          <Ionicons
+            name={importing ? 'sync' : 'folder-open'}
+            size={48}
+            color="#ffffff"
+            style={styles.dropIcon}
+          />
           <Text style={[styles.dropTitle, s.textWhite, s.mb1]}>
             {importing ? 'Importing…' : 'Select a File'}
           </Text>
@@ -77,7 +83,7 @@ export default function ImportPage() {
             disabled={importing}
           >
             {importing ? (
-              <ActivityIndicator color={Colors.textPrimary} />
+              <ActivityIndicator color="#ffffff" />
             ) : (
               <Text style={[styles.browseButtonText, s.textWhite]}>Browse Local Storage</Text>
             )}
@@ -107,9 +113,7 @@ const styles = StyleSheet.create({
   },
 
   backArrow: {
-    fontSize: 20,
-    marginRight: 6,
-    color: Colors.primary,
+    marginRight: 4,
   },
 
   backText: {
@@ -149,7 +153,7 @@ const styles = StyleSheet.create({
   },
 
   dropIcon: {
-    fontSize: 48,
+    marginBottom: 12,
   },
 
   dropTitle: {

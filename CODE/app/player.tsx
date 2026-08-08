@@ -9,8 +9,9 @@ import {
   type GestureResponderEvent,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors, Radii } from '../constants/theme';
-import { s, c } from '../styles/bootstrap';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '../constants/theme';
+import { s } from '../styles/bootstrap';
 import { useAudio } from '../context/AudioContext';
 
 // ---------------------------------------------------------------------------
@@ -202,7 +203,7 @@ export default function PlayerScreen() {
         activeOpacity={0.6}
         accessibilityLabel="Close player"
       >
-        <View style={[styles.dismissHandle, s.roundedPill]} />
+        <Ionicons name="chevron-down" size={24} color="#ffffff" />
         <Text style={[styles.dismissLabel, s.textSecondary]}>Player</Text>
       </TouchableOpacity>
 
@@ -213,7 +214,7 @@ export default function PlayerScreen() {
           {currentTrack?.artworkUri ? (
             <Image source={{ uri: currentTrack.artworkUri }} style={styles.albumArtImage} />
           ) : (
-            <Text style={styles.albumArtIcon}>♪</Text>
+            <Ionicons name="musical-notes" size={72} color="#ffffff" />
           )}
         </View>
 
@@ -249,7 +250,7 @@ export default function PlayerScreen() {
             onPress={playPrevious}
             accessibilityLabel="Previous track"
           >
-            <Text style={[styles.controlIcon, s.textWhite, { color: '#ffffff' }]}>⏮</Text>
+            <Ionicons name="play-skip-back" size={26} color="#ffffff" />
           </TouchableOpacity>
 
           {/* Play / Pause button */}
@@ -260,9 +261,7 @@ export default function PlayerScreen() {
             activeOpacity={0.8}
             accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
           >
-            <Text style={[styles.playIcon, s.textWhite, { color: '#ffffff' }]}>
-              {isPlaying ? '⏸' : '▶'}
-            </Text>
+            <Ionicons name={isPlaying ? 'pause' : 'play'} size={30} color="#ffffff" />
           </TouchableOpacity>
 
           {/* Next track */}
@@ -271,7 +270,7 @@ export default function PlayerScreen() {
             onPress={playNext}
             accessibilityLabel="Next track"
           >
-            <Text style={[styles.controlIcon, s.textWhite, { color: '#ffffff' }]}>⏭</Text>
+            <Ionicons name="play-skip-forward" size={26} color="#ffffff" />
           </TouchableOpacity>
         </View>
 
@@ -288,14 +287,11 @@ export default function PlayerScreen() {
             onPress={toggleShuffle}
             accessibilityLabel="Toggle shuffle"
           >
-            <Text
-              style={[
-                styles.secondaryIcon,
-                { color: isShuffled ? Colors.primary : Colors.textMuted },
-              ]}
-            >
-              🔀
-            </Text>
+            <Ionicons
+              name="shuffle"
+              size={22}
+              color={isShuffled ? Colors.primary : '#ffffff'}
+            />
           </TouchableOpacity>
 
           {/* Like / Unlike button */}
@@ -305,9 +301,11 @@ export default function PlayerScreen() {
             disabled={!currentTrack}
             accessibilityLabel={isLiked ? 'Unlike track' : 'Like track'}
           >
-            <Text style={[styles.secondaryIcon, isLiked && styles.secondaryIconLiked]}>
-              {isLiked ? '❤' : '🤍'}
-            </Text>
+            <Ionicons
+              name={isLiked ? 'heart' : 'heart-outline'}
+              size={22}
+              color={isLiked ? Colors.danger : '#ffffff'}
+            />
           </TouchableOpacity>
 
           {/* Repeat button with '1' badge when repeatMode === 'one' */}
@@ -322,14 +320,11 @@ export default function PlayerScreen() {
             onPress={toggleRepeat}
             accessibilityLabel="Toggle repeat"
           >
-            <Text
-              style={[
-                styles.secondaryIcon,
-                { color: repeatMode !== 'off' ? Colors.primary : Colors.textMuted },
-              ]}
-            >
-              🔁
-            </Text>
+            <Ionicons
+              name="repeat"
+              size={22}
+              color={repeatMode !== 'off' ? Colors.primary : '#ffffff'}
+            />
             {repeatMode === 'one' && (
               <View style={styles.repeatBadge}>
                 <Text style={styles.repeatBadgeText}>1</Text>
@@ -341,7 +336,7 @@ export default function PlayerScreen() {
 
       {/* ── 7. Bottom Volume Slider ── */}
       <View style={[styles.volumeRow, s.flexRow, s.alignItemsCenter, s.w100]}>
-        <Text style={styles.volumeIcon}>🔈</Text>
+        <Ionicons name="volume-low-outline" size={20} color="#ffffff" />
         <View style={s.flex1}>
           <Slider
             value={volume}
@@ -352,7 +347,7 @@ export default function PlayerScreen() {
             thumbColor={Colors.textMuted}
           />
         </View>
-        <Text style={styles.volumeIcon}>🔊</Text>
+        <Ionicons name="volume-high-outline" size={20} color="#ffffff" />
       </View>
     </View>
   );
@@ -365,17 +360,12 @@ const styles = StyleSheet.create({
   dismissArea: {
     paddingTop: 12,
   },
-  dismissHandle: {
-    width: 36,
-    height: 4,
-    backgroundColor: Colors.border,
-    marginBottom: 8,
-  },
   dismissLabel: {
     fontSize: 12,
     fontFamily: 'Inter',
     textTransform: 'uppercase',
     letterSpacing: 1.5,
+    marginTop: 2,
   },
   albumArt: {
     width: '100%',
@@ -389,10 +379,6 @@ const styles = StyleSheet.create({
   albumArtImage: {
     width: '100%',
     height: '100%',
-  },
-  albumArtIcon: {
-    fontSize: 80,
-    color: Colors.textMuted,
   },
   trackInfo: {
     paddingHorizontal: 12,
@@ -421,20 +407,10 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
   },
-  controlIcon: {
-    fontSize: 24,
-    color: '#ffffff',
-  },
   playBtn: {
     width: 64,
     height: 64,
     backgroundColor: Colors.primary,
-  },
-  playIcon: {
-    fontSize: 26,
-    color: '#ffffff',
-    fontWeight: '700',
-    textAlign: 'center',
   },
   secondaryControls: {
     paddingHorizontal: 24,
@@ -448,16 +424,6 @@ const styles = StyleSheet.create({
   secondaryBtnActive: {
     backgroundColor: 'rgba(13, 110, 253, 0.2)',
     borderRadius: 22,
-  },
-  secondaryIcon: {
-    fontSize: 20,
-    color: Colors.textMuted,
-  },
-  secondaryIconActive: {
-    color: Colors.primary,
-  },
-  secondaryIconLiked: {
-    color: Colors.danger,
   },
   repeatBadge: {
     position: 'absolute',
@@ -479,8 +445,5 @@ const styles = StyleSheet.create({
   },
   volumeRow: {
     gap: 12,
-  },
-  volumeIcon: {
-    fontSize: 18,
   },
 });

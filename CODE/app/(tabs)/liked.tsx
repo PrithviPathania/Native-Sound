@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, ActivityIndicator, Image } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Colors, Radii } from '../../constants/theme';
-import { s, c } from '../../styles/bootstrap';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '../../constants/theme';
+import { s } from '../../styles/bootstrap';
 import { getLikedTracks } from '../../services/database';
 import { useAudio } from '../../context/AudioContext';
 import type { Track } from '../../types/track';
@@ -75,7 +76,11 @@ export default function LikedSongsPage() {
           {item.artworkUri ? (
             <Image source={{ uri: item.artworkUri }} style={styles.trackThumbImage} />
           ) : (
-            <Text style={styles.trackThumbIcon}>{isActive && isPlaying ? '▶' : '♪'}</Text>
+            <Ionicons
+              name={isActive && isPlaying ? 'play' : 'musical-note'}
+              size={20}
+              color="#ffffff"
+            />
           )}
         </View>
         <View style={[s.flex1, styles.trackInfo]}>
@@ -86,7 +91,7 @@ export default function LikedSongsPage() {
         </View>
         <Text style={[styles.trackDuration, s.textSecondary]}>{formatDuration(item.duration)}</Text>
         <TouchableOpacity onPress={() => handleUnlike(item)} style={styles.heartBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={styles.heartIcon}>❤</Text>
+          <Ionicons name="heart" size={20} color={Colors.danger} />
         </TouchableOpacity>
       </TouchableOpacity>
     );
@@ -100,13 +105,13 @@ export default function LikedSongsPage() {
         activeOpacity={0.7}
         onPress={() => router.back()}
       >
-        <Text style={[styles.backArrow, s.textPrimary]}>←</Text>
+        <Ionicons name="chevron-back" size={20} color={Colors.primary} style={styles.backArrow} />
         <Text style={[styles.backText, s.textPrimary]}>Library</Text>
       </TouchableOpacity>
 
       {/* Page header with danger color heart */}
       <View style={[styles.header, s.flexRow, s.alignItemsCenter, s.py3]}>
-        <Text style={styles.heartBig}>❤️</Text>
+        <Ionicons name="heart" size={28} color={Colors.danger} style={styles.heartBig} />
         <Text style={[styles.pageTitle, s.textWhite]}>Liked Songs</Text>
       </View>
 
@@ -118,11 +123,11 @@ export default function LikedSongsPage() {
       ) : tracks.length === 0 ? (
         <View style={[styles.emptyState, s.flex1, s.alignItemsCenter, s.justifyContentCenter]}>
           <View style={[styles.emptyIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb3]}>
-            <Text style={styles.emptyHeart}>♥</Text>
+            <Ionicons name="heart" size={32} color={Colors.danger} />
           </View>
           <Text style={[styles.emptyTitle, s.textWhite, s.mb1]}>No liked songs yet</Text>
           <Text style={[styles.emptySubtitle, s.textSecondary]}>
-            Tap the ♥ on any track to save it here
+            Tap the heart on any track to save it here
           </Text>
         </View>
       ) : (
@@ -145,13 +150,13 @@ const styles = StyleSheet.create({
   backButton: {
     minHeight: 44,
   },
-  backArrow: { fontSize: 20, marginRight: 6, color: Colors.primary },
+  backArrow: { marginRight: 4 },
   backText: { fontSize: 16, fontFamily: 'Inter', color: Colors.primary },
   header: {
     paddingTop: 8,
     paddingBottom: 16,
   },
-  heartBig: { fontSize: 28, marginRight: 12 },
+  heartBig: { marginRight: 12 },
   pageTitle: {
     fontSize: 28,
     fontFamily: 'Inter-Bold',
@@ -167,7 +172,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(220, 53, 69, 0.3)',
   },
-  emptyHeart: { fontSize: 32, color: Colors.danger },
   emptyTitle: {
     fontSize: 20,
     fontFamily: 'Inter-Bold',
@@ -201,7 +205,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  trackThumbIcon: { fontSize: 18, color: Colors.textMuted },
   trackInfo: { marginRight: 8 },
   trackTitle: {
     fontSize: 16,
@@ -222,5 +225,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heartIcon: { fontSize: 18, color: Colors.danger },
 });

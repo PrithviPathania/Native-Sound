@@ -9,8 +9,9 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Colors, Radii } from '../../constants/theme';
-import { s, c } from '../../styles/bootstrap';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '../../constants/theme';
+import { s } from '../../styles/bootstrap';
 import { useAudio } from '../../context/AudioContext';
 import type { Track } from '../../types/track';
 
@@ -93,7 +94,11 @@ export default function LibraryPage() {
           {item.artworkUri ? (
             <Image source={{ uri: item.artworkUri }} style={styles.trackThumbImage} />
           ) : (
-            <Text style={styles.trackThumbIcon}>{isActive && isPlaying ? '▶' : '♪'}</Text>
+            <Ionicons
+              name={isActive && isPlaying ? 'play' : 'musical-note'}
+              size={20}
+              color="#ffffff"
+            />
           )}
         </View>
 
@@ -130,14 +135,11 @@ export default function LibraryPage() {
           accessibilityLabel={isLiked ? 'Unlike track' : 'Like track'}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text
-            style={[
-              styles.heartBadge,
-              !isLiked && styles.heartBadgeUnliked,
-            ]}
-          >
-            {isLiked ? '❤' : '🤍'}
-          </Text>
+          <Ionicons
+            name={isLiked ? 'heart' : 'heart-outline'}
+            size={20}
+            color={isLiked ? Colors.danger : '#ffffff'}
+          />
         </TouchableOpacity>
       </TouchableOpacity>
     );
@@ -147,7 +149,7 @@ export default function LibraryPage() {
     <View style={[styles.container, s.flex1, s.bgDark, s.px3]}>
       {/* Header */}
       <View style={[styles.header, s.flexRow, s.alignItemsCenter, s.py3]}>
-        <Text style={styles.headerIcon}>🎵</Text>
+        <Ionicons name="musical-notes" size={28} color="#ffffff" style={styles.headerIcon} />
         <Text style={[styles.headerTitle, s.textWhite]}>Your Library</Text>
       </View>
 
@@ -159,7 +161,7 @@ export default function LibraryPage() {
           onPress={() => router.push('/(tabs)/import')}
         >
           <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2]}>
-            <Text style={styles.ctaIcon}>📥</Text>
+            <Ionicons name="cloud-upload" size={22} color="#ffffff" />
           </View>
           <Text style={[styles.ctaTitle, s.textWhite, s.mb1]}>Import Songs</Text>
           <Text style={[styles.ctaSubtitle, s.textSecondary]}>Add from local storage</Text>
@@ -171,7 +173,7 @@ export default function LibraryPage() {
           onPress={() => router.push('/(tabs)/liked')}
         >
           <View style={[styles.ctaIconContainer, styles.ctaIconLiked, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2]}>
-            <Text style={styles.ctaIcon}>❤️</Text>
+            <Ionicons name="heart" size={22} color="#ffffff" />
           </View>
           <Text style={[styles.ctaTitle, s.textWhite, s.mb1]}>Liked Songs</Text>
           <Text style={[styles.ctaSubtitle, s.textSecondary]}>View favorites →</Text>
@@ -187,7 +189,7 @@ export default function LibraryPage() {
             onPress={handlePlayAll}
           >
             <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2]}>
-              <Text style={styles.ctaIcon}>▶️</Text>
+              <Ionicons name="play" size={22} color="#ffffff" />
             </View>
             <Text style={[styles.ctaTitle, s.textWhite, s.mb1]}>Play All</Text>
             <Text style={[styles.ctaSubtitle, s.textSecondary]}>Start from top</Text>
@@ -199,7 +201,7 @@ export default function LibraryPage() {
             onPress={handleShuffleAll}
           >
             <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2]}>
-              <Text style={styles.ctaIcon}>🔀</Text>
+              <Ionicons name="shuffle" size={22} color="#ffffff" />
             </View>
             <Text style={[styles.ctaTitle, s.textWhite, s.mb1]}>Shuffle All</Text>
             <Text style={[styles.ctaSubtitle, s.textSecondary]}>Play in random order</Text>
@@ -211,7 +213,7 @@ export default function LibraryPage() {
       {tracks.length === 0 ? (
         <View style={[styles.emptyState, s.flex1, s.alignItemsCenter, s.justifyContentCenter]}>
           <View style={[styles.emptyIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb3]}>
-            <Text style={styles.emptyIcon}>♪</Text>
+            <Ionicons name="musical-notes-outline" size={36} color="#ffffff" />
           </View>
           <Text style={[styles.emptyTitle, s.textWhite, s.mb1]}>No songs yet</Text>
           <Text style={[styles.emptySubtitle, s.textSecondary]}>
@@ -247,7 +249,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 16,
   },
-  headerIcon: { fontSize: 28, marginRight: 12 },
+  headerIcon: { marginRight: 12 },
   headerTitle: {
     fontSize: 28,
     fontFamily: 'Inter-Bold',
@@ -269,7 +271,6 @@ const styles = StyleSheet.create({
   ctaIconLiked: {
     backgroundColor: 'rgba(220, 53, 69, 0.15)',
   },
-  ctaIcon: { fontSize: 20 },
   ctaTitle: {
     fontSize: 15,
     fontFamily: 'Inter-Bold',
@@ -289,7 +290,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  emptyIcon: { fontSize: 32, color: Colors.textMuted },
   emptyTitle: {
     fontSize: 20,
     fontFamily: 'Inter-Bold',
@@ -325,7 +325,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  trackThumbIcon: { fontSize: 18, color: Colors.textMuted },
   trackInfo: { marginRight: 8 },
   trackTitle: {
     fontSize: 16,
@@ -342,14 +341,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter',
     marginRight: 8,
-  },
-  heartBadge: {
-    fontSize: 18,
-    color: Colors.danger,
-  },
-  heartBadgeUnliked: {
-    color: Colors.textMuted,
-    opacity: 0.5,
   },
   heartBtn: {
     minWidth: 44,
