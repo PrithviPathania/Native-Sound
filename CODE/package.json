@@ -27,14 +27,19 @@
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/react": "^16.2.0",
     "@types/react": "~19.2.2",
-    "typescript": "~6.0.3"
+    "jsdom": "^26.0.0",
+    "typescript": "~6.0.3",
+    "vitest": "^3.0.5"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "test": "vitest run"
   },
   "private": true
 }
