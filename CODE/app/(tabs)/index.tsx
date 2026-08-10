@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Image,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +30,7 @@ export default function LibraryPage() {
     currentTrack,
     isPlaying,
     toggleLike,
+    removeTrack,
     tracks,
     refreshTracks,
     playAll,
@@ -61,6 +63,21 @@ export default function LibraryPage() {
   const handleShuffleAll = async () => {
     await shuffleAll();
     router.push('/player');
+  };
+
+  const handleDelete = (track: Track) => {
+    Alert.alert(
+      'Remove Song',
+      `Remove "${track.title}" from your library?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => removeTrack(track.id),
+        },
+      ]
+    );
   };
 
   const renderTrack = ({ item }: { item: Track }) => {
@@ -140,6 +157,20 @@ export default function LibraryPage() {
             size={20}
             color={isLiked ? Colors.danger : '#ffffff'}
           />
+        </TouchableOpacity>
+
+        {/* Trash CTA trailing */}
+        <TouchableOpacity
+          style={styles.heartBtn}
+          onPress={(e) => {
+            e.stopPropagation();
+            handleDelete(item);
+          }}
+          activeOpacity={0.7}
+          accessibilityLabel="Remove track"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="trash-outline" size={20} color={Colors.textMuted} />
         </TouchableOpacity>
       </TouchableOpacity>
     );

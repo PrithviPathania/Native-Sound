@@ -15,7 +15,7 @@ import { Alert } from 'react-native';
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import type { AudioPlayer, AudioStatus } from 'expo-audio';
 import type { Track } from '../types/track';
-import { getAllTracks, toggleLikeTrack } from '../services/database';
+import { getAllTracks, toggleLikeTrack, deleteTrack } from '../services/database';
 
 export type RepeatMode = 'off' | 'all' | 'one';
 
@@ -36,6 +36,7 @@ export interface AudioContextValue {
   playPrevious: () => Promise<void>;
   refreshTracks: () => Promise<void>;
   toggleLike: (trackId: number) => Promise<boolean>;
+  removeTrack: (trackId: number) => Promise<void>;
   likedTracks: Track[];
   playAll: () => Promise<void>;
   shuffleAll: () => Promise<void>;
@@ -389,6 +390,26 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // removeTrack — deletes from DB + files, then removes from state.
+  // If the deleted track is currently playing, stop the player and clear it.
+  const removeTrack = useCallback(async (trackId: number) => {
+    try {
+      await deleteTrack(trackId);
+      setTracks((prev) => prev.filter((t) => t.id !== trackId));
+      setCurrentTrack((prev) => {
+        if (prev && prev.id === trackId) {
+          playerRef.current?.pause();
+          setIsPlaying(false);
+          return null;
+        }
+        return prev;
+      });
+    } catch (err) {
+      console.error('[AudioContext] removeTrack error:', err);
+      Alert.alert('Delete Failed', 'Could not remove this track.');
+    }
+  }, []);
+
   return (
     <AudioContext.Provider
       value={{
@@ -408,6 +429,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         playPrevious,
         refreshTracks,
         toggleLike,
+        removeTrack,
         likedTracks: tracks.filter((t) => t.liked || t.isLiked),
         playAll,
         shuffleAll,
