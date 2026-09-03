@@ -71,11 +71,13 @@ export default function MiniPlayer() {
 
 const styles = StyleSheet.create({
   container: {
-    height: 64,
+    height: 88,
     backgroundColor: Colors.surface,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     paddingHorizontal: 16,
+    // Extra bottom padding keeps the row clear of the screen edge / home indicator.
+    paddingBottom: 24,
     position: 'relative',
   },
   progressBarTrack: {
