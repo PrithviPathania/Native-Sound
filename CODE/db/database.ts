@@ -4,7 +4,7 @@
 import * as SQLite from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system/legacy';
 import type { Track } from '../types/track';
-import { readAudioDurationAsync } from '../services/fileImporter';
+import { readAudioDurationAsync } from '../utils/audioDuration';
 
 let db: SQLite.SQLiteDatabase | null = null;
 

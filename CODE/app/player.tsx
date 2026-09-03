@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Image,
   PanResponder,
-  type GestureResponderEvent,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,7 +32,7 @@ function clamp(val: number, min: number, max: number): number {
 // ---------------------------------------------------------------------------
 interface SliderProps {
   value: number;        // 0–1
-  onValueChange: (v: number) => void;
+  onValueChange?: (v: number) => void;
   onSlidingComplete: (v: number) => void;
   thumbColor?: string;
   trackColor?: string;
@@ -52,55 +51,117 @@ function Slider({
   const [sliding, setSliding] = useState(false);
   const [slideValue, setSlideValue] = useState(value);
 
-  const displayValue = sliding ? slideValue : value;
+  const trackWidthRef = useRef(1);
+  const slidingRef = useRef(false);
+  const slideValueRef = useRef(value);
+  const startValRef = useRef(0);
+  const onValueChangeRef = useRef(onValueChange);
+  const onSlidingCompleteRef = useRef(onSlidingComplete);
+  const releaseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const valueFromEvent = useCallback(
-    (evt: GestureResponderEvent): number => {
-      const x = evt.nativeEvent.locationX;
-      return clamp(x / trackWidth, 0, 1);
-    },
-    [trackWidth]
+  useEffect(() => {
+    trackWidthRef.current = trackWidth;
+  }, [trackWidth]);
+
+  useEffect(() => {
+    onValueChangeRef.current = onValueChange;
+    onSlidingCompleteRef.current = onSlidingComplete;
+  });
+
+  // When not actively dragging, keep slideValue synced with external value
+  useEffect(() => {
+    if (!slidingRef.current) {
+      setSlideValue(value);
+      slideValueRef.current = value;
+    }
+  }, [value]);
+
+  useEffect(() => {
+    return () => {
+      if (releaseTimeoutRef.current) {
+        clearTimeout(releaseTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (evt) => {
+          if (releaseTimeoutRef.current) {
+            clearTimeout(releaseTimeoutRef.current);
+            releaseTimeoutRef.current = null;
+          }
+          slidingRef.current = true;
+          setSliding(true);
+
+          const w = Math.max(1, trackWidthRef.current);
+          const locX = clamp(evt.nativeEvent.locationX, 0, w);
+          const initialVal = clamp(locX / w, 0, 1);
+
+          startValRef.current = initialVal;
+          slideValueRef.current = initialVal;
+          setSlideValue(initialVal);
+          onValueChangeRef.current?.(initialVal);
+        },
+        onPanResponderMove: (_, gestureState) => {
+          const w = Math.max(1, trackWidthRef.current);
+          const nextVal = clamp(startValRef.current + gestureState.dx / w, 0, 1);
+          slideValueRef.current = nextVal;
+          setSlideValue(nextVal);
+          onValueChangeRef.current?.(nextVal);
+        },
+        onPanResponderRelease: () => {
+          const finalVal = slideValueRef.current;
+          onSlidingCompleteRef.current?.(finalVal);
+
+          // Delay clearing sliding state to prevent visual snap-back while player seeks
+          releaseTimeoutRef.current = setTimeout(() => {
+            slidingRef.current = false;
+            setSliding(false);
+          }, 300);
+        },
+        onPanResponderTerminate: () => {
+          slidingRef.current = false;
+          setSliding(false);
+        },
+      }),
+    []
   );
 
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderGrant: (evt) => {
-      setSliding(true);
-      const v = valueFromEvent(evt);
-      setSlideValue(v);
-      onValueChange(v);
-    },
-    onPanResponderMove: (evt) => {
-      const v = clamp(evt.nativeEvent.locationX / trackWidth, 0, 1);
-      setSlideValue(v);
-      onValueChange(v);
-    },
-    onPanResponderRelease: (evt) => {
-      const v = clamp(evt.nativeEvent.locationX / trackWidth, 0, 1);
-      setSlideValue(v);
-      setSliding(false);
-      onSlidingComplete(v);
-    },
-  });
+  const displayValue = sliding ? slideValue : value;
 
   return (
     <View
       style={sliderStyles.trackContainer}
-      onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
+      onLayout={(e) => {
+        const w = e.nativeEvent.layout.width;
+        if (w > 0) {
+          setTrackWidth(w);
+          trackWidthRef.current = w;
+        }
+      }}
+      hitSlop={{ top: 12, bottom: 12, left: 0, right: 0 }}
       {...panResponder.panHandlers}
     >
-      <View style={[sliderStyles.trackBg, { backgroundColor: trackColor }]} />
       <View
+        pointerEvents="none"
+        style={[sliderStyles.trackBg, { backgroundColor: trackColor }]}
+      />
+      <View
+        pointerEvents="none"
         style={[
           sliderStyles.trackFill,
-          { width: `${displayValue * 100}%`, backgroundColor: activeTrackColor },
+          { width: `${clamp(displayValue, 0, 1) * 100}%`, backgroundColor: activeTrackColor },
         ]}
       />
       <View
+        pointerEvents="none"
         style={[
           sliderStyles.thumb,
-          { left: `${displayValue * 100}%`, backgroundColor: thumbColor },
+          { left: `${clamp(displayValue, 0, 1) * 100}%`, backgroundColor: thumbColor },
         ]}
       />
     </View>
@@ -164,8 +225,17 @@ export default function PlayerScreen() {
   const title = currentTrack?.title ?? 'No track selected';
   const artist = currentTrack?.artist ?? '—';
 
+  const [scrubRatio, setScrubRatio] = useState<number | null>(null);
+
   const progress = duration > 0 ? clamp(currentTime / duration, 0, 1) : 0;
   const remaining = duration > 0 ? Math.max(0, duration - currentTime) : 0;
+
+  const displayedTime =
+    scrubRatio !== null && duration > 0 ? scrubRatio * duration : currentTime;
+  const displayedRemaining =
+    scrubRatio !== null && duration > 0
+      ? Math.max(0, duration - displayedTime)
+      : remaining;
 
   // Swipe-to-dismiss gesture responder
   const swipePanResponder = useRef(
@@ -184,8 +254,10 @@ export default function PlayerScreen() {
 
   const handleProgressComplete = useCallback(
     (normalised: number) => {
-      if (duration > 0) {
-        seekTo(normalised * duration);
+      setScrubRatio(null);
+      if (duration > 0 && !isNaN(normalised)) {
+        const targetSeconds = Math.max(0, Math.min(duration, normalised * duration));
+        seekTo(targetSeconds);
       }
     },
     [duration, seekTo]
@@ -230,15 +302,15 @@ export default function PlayerScreen() {
         <View style={[styles.progressContainer, s.w100, s.mb4]}>
           <Slider
             value={progress}
-            onValueChange={() => {}}
+            onValueChange={(ratio) => setScrubRatio(ratio)}
             onSlidingComplete={handleProgressComplete}
             activeTrackColor={Colors.primary}
             trackColor={Colors.border}
             thumbColor={Colors.primary}
           />
           <View style={[s.flexRow, s.justifyContentBetween, s.alignItemsCenter, s.mt1]}>
-            <Text style={[styles.timeText, s.textSecondary]}>{formatTime(currentTime)}</Text>
-            <Text style={[styles.timeText, s.textSecondary]}>-{formatTime(remaining)}</Text>
+            <Text style={[styles.timeText, s.textSecondary]}>{formatTime(displayedTime)}</Text>
+            <Text style={[styles.timeText, s.textSecondary]}>-{formatTime(displayedRemaining)}</Text>
           </View>
         </View>
 

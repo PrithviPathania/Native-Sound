@@ -1,19 +1,5 @@
 // Type declarations for packages that don't ship their own types
 
-declare module 'react-native-bootstrap-styles' {
-  import { ViewStyle, TextStyle, ImageStyle } from 'react-native';
-
-  type StyleValue = ViewStyle | TextStyle | ImageStyle;
-  type StyleSheet = Record<string, StyleValue>;
-  type ColorMap = Record<string, string>;
-
-  interface BootstrapStyles {
-    s: StyleSheet;
-    c: ColorMap;
-  }
-
-  export function create(options?: Record<string, unknown>): BootstrapStyles;
-}
 
 declare module 'expo-music-info-2' {
   interface MusicInfo {

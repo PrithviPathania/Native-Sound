@@ -3,72 +3,12 @@
 
 import * as DocumentPicker from 'expo-document-picker';
 import { File, Directory, Paths } from 'expo-file-system';
-import { createAudioPlayer } from 'expo-audio';
 import MusicInfo from 'expo-music-info-2';
 import { insertTrack } from '../db/database';
+import { readAudioDurationAsync } from '../utils/audioDuration';
 import type { Track } from '../types/track';
 
-/**
- * Asynchronously extracts duration in seconds from an audio file using expo-audio.
- * Listens for native playbackStatusUpdate resolution and cleans up temporary player.
- */
-export function readAudioDurationAsync(fileUri: string): Promise<number> {
-  return new Promise((resolve) => {
-    let resolved = false;
-    let tempPlayer: ReturnType<typeof createAudioPlayer> | null = null;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    const cleanup = () => {
-      if (timeoutId) clearTimeout(timeoutId);
-      if (tempPlayer) {
-        try {
-          if (typeof tempPlayer.remove === 'function') {
-            tempPlayer.remove();
-          }
-        } catch (e) {
-          console.warn('[Importer] Error releasing tempPlayer:', e);
-        }
-        tempPlayer = null;
-      }
-    };
-
-    const finish = (durSeconds: number) => {
-      if (resolved) return;
-      resolved = true;
-      cleanup();
-      const validSecs = !durSeconds || isNaN(durSeconds) || durSeconds <= 0 ? 0 : Math.round(durSeconds);
-      resolve(validSecs);
-    };
-
-    // Timeout safety fallback after 1.5s
-    timeoutId = setTimeout(() => {
-      finish(0);
-    }, 1500);
-
-    try {
-      tempPlayer = createAudioPlayer({ uri: fileUri });
-
-      // If duration is populated synchronously
-      if (tempPlayer.duration && tempPlayer.duration > 0 && !isNaN(tempPlayer.duration)) {
-        finish(tempPlayer.duration);
-        return;
-      }
-
-      // Listen for async status updates when native audio loader resolves duration
-      const sub = tempPlayer.addListener('playbackStatusUpdate', (status) => {
-        if (status.duration && status.duration > 0 && !isNaN(status.duration)) {
-          try {
-            sub.remove();
-          } catch {}
-          finish(status.duration);
-        }
-      });
-    } catch (err) {
-      console.warn('[Importer] Error initializing tempPlayer:', err);
-      finish(0);
-    }
-  });
-}
+export { readAudioDurationAsync };
 
 export async function importAudioFiles(): Promise<Track[]> {
   // Step 1 — Open document picker (do NOT copy to cache)
@@ -181,9 +121,4 @@ export async function importAudioFiles(): Promise<Track[]> {
   }
 
   return importedTracks;
-}
-
-export async function importAudioFile(): Promise<Track | null> {
-  const tracks = await importAudioFiles();
-  return tracks.length > 0 ? tracks[0] : null;
 }
