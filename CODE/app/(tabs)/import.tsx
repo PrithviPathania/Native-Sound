@@ -5,11 +5,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radii } from '../../constants/theme';
 import { s } from '../../styles/bootstrap';
 import { importAudioFiles } from '../../services/fileImporter';
+import { useTheme } from '../../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ImportPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors, fonts, isBW } = useTheme();
   const [importing, setImporting] = useState(false);
 
   const handleBackToLibrary = () => {
@@ -49,39 +51,107 @@ export default function ImportPage() {
   };
 
   return (
-    <View style={[styles.container, s.flex1, s.bgDark, s.px3, { paddingTop: Math.max(insets.top, 16) }]}>
+    <View style={[styles.container, s.flex1, s.px3, { backgroundColor: colors.background, paddingTop: Math.max(insets.top, 16) }]}>
       {/* Back to Library CTA Box */}
       <TouchableOpacity
-        style={[styles.libraryCard, s.flexRow, s.alignItemsCenter]}
+        style={[
+          styles.libraryCard,
+          s.flexRow,
+          s.alignItemsCenter,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+          isBW && { paddingHorizontal: 14, paddingVertical: 9, marginBottom: 16 },
+        ]}
         activeOpacity={0.7}
         onPress={handleBackToLibrary}
         accessibilityLabel="Back to Library"
       >
-        <View style={[styles.libraryIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter]}>
-          <Ionicons name="chevron-back" size={16} color="#ffffff" />
+        <View style={[styles.libraryIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, { backgroundColor: colors.activeRowBg, marginRight: isBW ? 10 : 8 }]}>
+          <Ionicons name="chevron-back" size={16} color={colors.primary} />
         </View>
-        <Text style={[styles.libraryCardTitle, s.textWhite]}>Library</Text>
+        <Text
+          style={[
+            styles.libraryCardTitle,
+            {
+              fontFamily: fonts.familyBold,
+              color: colors.textPrimary,
+              fontSize: isBW ? 16 : 14,
+              letterSpacing: isBW ? 1 : 0,
+              fontWeight: isBW ? undefined : '600',
+            },
+          ]}
+        >
+          Library
+        </Text>
       </TouchableOpacity>
 
       {/* Page header */}
-      <Text style={[styles.pageTitle, s.textWhite, s.mt1, s.mb1]}>Import Music</Text>
-      <Text style={[styles.pageSubtitle, s.textSecondary, s.mb4]}>
+      <Text
+        style={[
+          styles.pageTitle,
+          {
+            fontFamily: fonts.familyBold,
+            color: colors.textPrimary,
+            fontSize: isBW ? 34 : 28,
+            letterSpacing: isBW ? 1.2 : 0,
+            fontWeight: isBW ? undefined : '700',
+          },
+          s.mt1,
+          s.mb1,
+        ]}
+      >
+        Import Music
+      </Text>
+      <Text
+        style={[
+          styles.pageSubtitle,
+          {
+            fontFamily: fonts.family,
+            color: colors.textMuted,
+            fontSize: isBW ? 16 : 14,
+            letterSpacing: isBW ? 0.5 : 0,
+          },
+          isBW ? { marginBottom: 20 } : s.mb4,
+        ]}
+      >
         Add audio files from your device storage
       </Text>
 
       {/* Drop zone / import card with dashed border */}
-      <View style={styles.dropZone}>
-        <View style={[styles.dropZoneInner, s.alignItemsCenter, s.justifyContentCenter]}>
+      <View style={[styles.dropZone, { borderColor: colors.border }]}>
+        <View style={[styles.dropZoneInner, s.alignItemsCenter, s.justifyContentCenter, { backgroundColor: colors.surface }, isBW && { paddingVertical: 32 }]}>
           <Ionicons
             name={importing ? 'sync' : 'folder-open'}
-            size={48}
-            color="#ffffff"
+            size={isBW ? 56 : 48}
+            color={colors.primary}
             style={styles.dropIcon}
           />
-          <Text style={[styles.dropTitle, s.textWhite, s.mb1]}>
+          <Text
+            style={[
+              styles.dropTitle,
+              {
+                fontFamily: fonts.familyBold,
+                color: colors.textPrimary,
+                fontSize: isBW ? 24 : 20,
+                letterSpacing: isBW ? 1 : 0,
+                fontWeight: isBW ? undefined : '600',
+              },
+              s.mb1,
+            ]}
+          >
             {importing ? 'Importing…' : 'Select a File'}
           </Text>
-          <Text style={[styles.dropSubtitle, s.textSecondary, s.mb4]}>
+          <Text
+            style={[
+              styles.dropSubtitle,
+              {
+                fontFamily: fonts.family,
+                color: colors.textMuted,
+                fontSize: isBW ? 15 : 13,
+                letterSpacing: isBW ? 0.5 : 0,
+              },
+              isBW ? { marginBottom: 20 } : s.mb4,
+            ]}
+          >
             Only mp3 files are supported
           </Text>
 
@@ -91,16 +161,31 @@ export default function ImportPage() {
               styles.browseButton,
               s.alignItemsCenter,
               s.justifyContentCenter,
-              importing && styles.browseButtonDisabled,
+              { backgroundColor: colors.primary, shadowColor: colors.primary },
+              isBW && { minHeight: 54, paddingHorizontal: 36 },
+              importing && { backgroundColor: colors.activeRowBg, shadowOpacity: 0.2 },
             ]}
             activeOpacity={0.8}
             onPress={handleBrowse}
             disabled={importing}
           >
             {importing ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator color={isBW ? '#000000' : '#ffffff'} />
             ) : (
-              <Text style={[styles.browseButtonText, s.textWhite]}>Browse Local Storage</Text>
+              <Text
+                style={[
+                  styles.browseButtonText,
+                  {
+                    fontFamily: fonts.familyBold,
+                    color: isBW ? '#000000' : '#ffffff',
+                    fontSize: isBW ? 18 : 16,
+                    letterSpacing: isBW ? 1 : 0,
+                    fontWeight: isBW ? undefined : '600',
+                  },
+                ]}
+              >
+                Browse Local Storage
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -108,7 +193,18 @@ export default function ImportPage() {
 
       {/* Info helper section */}
       <View style={[styles.infoSection, s.py3]}>
-        <Text style={[styles.infoText, s.textSecondary]}>
+        <Text
+          style={[
+            styles.infoText,
+            {
+              fontFamily: fonts.family,
+              color: colors.textMuted,
+              fontSize: isBW ? 15 : 13,
+              lineHeight: isBW ? 22 : 20,
+              letterSpacing: isBW ? 0.5 : 0,
+            },
+          ]}
+        >
           Selected files are copied into the app for permanent offline playback.
           Metadata such as title, artist, album, and artwork are extracted automatically.
         </Text>

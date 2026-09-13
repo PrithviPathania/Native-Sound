@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
 import { s } from '../../styles/bootstrap';
 import { useAudio } from '../../context/AudioContext';
+import { useTheme } from '../../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Track } from '../../types/track';
 
@@ -27,6 +28,7 @@ export function formatDuration(seconds?: number): string {
 export default function LibraryPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors, fonts, isBW, toggleTheme } = useTheme();
   const {
     playTrack,
     currentTrack,
@@ -103,7 +105,7 @@ export default function LibraryPage() {
           s.p2,
           s.mb2,
           s.rounded,
-          isActive && styles.trackRowActive,
+          isActive && { backgroundColor: colors.activeRowBg },
         ]}
         activeOpacity={0.7}
         onPress={() => handleTrackPress(item)}
@@ -115,7 +117,8 @@ export default function LibraryPage() {
             s.rounded,
             s.alignItemsCenter,
             s.justifyContentCenter,
-            isActive && styles.trackThumbActive,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+            isActive && { backgroundColor: colors.activeTint, borderColor: colors.primary },
           ]}
         >
           {item.artworkUri ? (
@@ -124,7 +127,7 @@ export default function LibraryPage() {
             <Ionicons
               name={isActive && isPlaying ? 'play' : 'musical-note'}
               size={20}
-              color="#ffffff"
+              color={colors.textPrimary}
             />
           )}
         </View>
@@ -134,20 +137,49 @@ export default function LibraryPage() {
           <Text
             style={[
               styles.trackTitle,
-              s.textWhite,
-              isActive && styles.trackTitleActive,
+              {
+                fontFamily: fonts.familyBold,
+                color: colors.textPrimary,
+                fontSize: isBW ? 19 : 16,
+                letterSpacing: isBW ? 0.6 : 0,
+                fontWeight: isBW ? undefined : '600',
+                marginBottom: isBW ? 4 : 2,
+              },
+              isActive && { color: colors.primary },
             ]}
             numberOfLines={1}
           >
             {item.title}
           </Text>
-          <Text style={[styles.trackArtist, s.textSecondary]} numberOfLines={1}>
+          <Text
+            style={[
+              styles.trackArtist,
+              {
+                fontFamily: fonts.family,
+                color: colors.textMuted,
+                fontSize: isBW ? 15 : 14,
+                letterSpacing: isBW ? 0.5 : 0,
+              },
+            ]}
+            numberOfLines={1}
+          >
             {item.artist}
           </Text>
         </View>
 
         {/* Duration */}
-        <Text style={[styles.trackDuration, s.textSecondary]}>
+        <Text
+          style={[
+            styles.trackDuration,
+            {
+              fontFamily: fonts.family,
+              color: colors.textMuted,
+              fontSize: isBW ? 15 : 12,
+              letterSpacing: isBW ? 0.5 : 0,
+              marginRight: isBW ? 10 : 8,
+            },
+          ]}
+        >
           {formatDuration(item.duration)}
         </Text>
 
@@ -165,7 +197,7 @@ export default function LibraryPage() {
           <Ionicons
             name={isLiked ? 'heart' : 'heart-outline'}
             size={20}
-            color={isLiked ? Colors.danger : '#ffffff'}
+            color={isLiked ? colors.danger : colors.textMuted}
           />
         </TouchableOpacity>
 
@@ -180,44 +212,162 @@ export default function LibraryPage() {
           accessibilityLabel="Remove track"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="trash-outline" size={20} color={Colors.textMuted} />
+          <Ionicons name="trash-outline" size={20} color={colors.textMuted} />
         </TouchableOpacity>
       </TouchableOpacity>
     );
   };
 
   return (
-    <View style={[styles.container, s.flex1, s.bgDark, s.px3, { paddingTop: Math.max(insets.top, 16) }]}>
-      {/* Header */}
-      <View style={[styles.header, s.flexRow, s.alignItemsCenter]}>
-        <Ionicons name="musical-notes" size={28} color="#ffffff" style={styles.headerIcon} />
-        <Text style={[styles.headerTitle, s.textWhite]}>Your Library</Text>
+    <View style={[styles.container, s.flex1, s.px3, { backgroundColor: colors.background, paddingTop: Math.max(insets.top, 16) }]}>
+      {/* Header with Theme Switcher */}
+      <View style={[styles.header, s.flexRow, s.alignItemsCenter, s.justifyContentBetween, isBW && { paddingTop: 12, paddingBottom: 22 }]}>
+        <View style={[s.flexRow, s.alignItemsCenter]}>
+          <Ionicons name="musical-notes" size={isBW ? 32 : 28} color={colors.textPrimary} style={styles.headerIcon} />
+          <Text
+            style={[
+              styles.headerTitle,
+              {
+                fontFamily: fonts.familyBold,
+                color: colors.textPrimary,
+                fontSize: isBW ? 34 : 28,
+                letterSpacing: isBW ? 1.2 : 0,
+                fontWeight: isBW ? undefined : '700',
+              },
+            ]}
+          >
+            Your Library
+          </Text>
+        </View>
+
+        {/* Theme Switcher Button */}
+        <TouchableOpacity
+          style={[
+            styles.themePill,
+            { borderColor: colors.border, backgroundColor: colors.surface },
+            isBW && { paddingHorizontal: 12, paddingVertical: 6 },
+          ]}
+          onPress={toggleTheme}
+          activeOpacity={0.7}
+          accessibilityLabel={`Current theme: ${isBW ? 'Black and White' : 'Classic'}. Tap to switch theme.`}
+        >
+          <Ionicons
+            name={isBW ? 'contrast' : 'color-palette-outline'}
+            size={isBW ? 16 : 14}
+            color={colors.textPrimary}
+            style={{ marginRight: 6 }}
+          />
+          <Text
+            style={[
+              styles.themePillText,
+              {
+                fontFamily: fonts.familyBold,
+                color: colors.textPrimary,
+                fontSize: isBW ? 13 : 11,
+                letterSpacing: isBW ? 1.2 : 0.8,
+                fontWeight: isBW ? undefined : '700',
+              },
+            ]}
+          >
+            {isBW ? 'B&W' : 'COLOR'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Navigation CTAs — Row 1: Import & Liked Songs */}
       <View style={[styles.ctaRow, s.flexRow, s.mb3]}>
         <TouchableOpacity
-          style={[styles.ctaCard, s.flex1, s.p3, s.rounded, s.alignItemsCenter]}
+          style={[
+            styles.ctaCard,
+            s.flex1,
+            s.p3,
+            s.rounded,
+            s.alignItemsCenter,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+            isBW && { paddingVertical: 18, paddingHorizontal: 14 },
+          ]}
           activeOpacity={0.7}
           onPress={() => router.push('/(tabs)/import')}
         >
-          <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2]}>
-            <Ionicons name="cloud-upload" size={22} color="#ffffff" />
+          <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2, { backgroundColor: colors.cardIconBg }]}>
+            <Ionicons name="cloud-upload" size={24} color={colors.textPrimary} />
           </View>
-          <Text style={[styles.ctaTitle, s.textWhite, s.mb1]}>Import Songs</Text>
-          <Text style={[styles.ctaSubtitle, s.textSecondary]}>Add from local storage</Text>
+          <Text
+            style={[
+              styles.ctaTitle,
+              s.mb1,
+              {
+                fontFamily: fonts.familyBold,
+                color: colors.textPrimary,
+                fontSize: isBW ? 19 : 15,
+                letterSpacing: isBW ? 1 : 0,
+                fontWeight: isBW ? undefined : '600',
+                marginBottom: isBW ? 4 : 2,
+              },
+            ]}
+          >
+            Import Songs
+          </Text>
+          <Text
+            style={[
+              styles.ctaSubtitle,
+              {
+                fontFamily: fonts.family,
+                color: colors.textMuted,
+                fontSize: isBW ? 15 : 12,
+                letterSpacing: isBW ? 0.5 : 0,
+              },
+            ]}
+          >
+            Add from local storage
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.ctaCard, s.flex1, s.p3, s.rounded, s.alignItemsCenter]}
+          style={[
+            styles.ctaCard,
+            s.flex1,
+            s.p3,
+            s.rounded,
+            s.alignItemsCenter,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+            isBW && { paddingVertical: 18, paddingHorizontal: 14 },
+          ]}
           activeOpacity={0.7}
           onPress={() => router.push('/(tabs)/liked')}
         >
-          <View style={[styles.ctaIconContainer, styles.ctaIconLiked, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2]}>
-            <Ionicons name="heart" size={22} color="#ffffff" />
+          <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2, { backgroundColor: colors.cardIconLikedBg }]}>
+            <Ionicons name="heart" size={24} color={isBW ? colors.textPrimary : '#ffffff'} />
           </View>
-          <Text style={[styles.ctaTitle, s.textWhite, s.mb1]}>Liked Songs</Text>
-          <Text style={[styles.ctaSubtitle, s.textSecondary]}>View favorites →</Text>
+          <Text
+            style={[
+              styles.ctaTitle,
+              s.mb1,
+              {
+                fontFamily: fonts.familyBold,
+                color: colors.textPrimary,
+                fontSize: isBW ? 19 : 15,
+                letterSpacing: isBW ? 1 : 0,
+                fontWeight: isBW ? undefined : '600',
+                marginBottom: isBW ? 4 : 2,
+              },
+            ]}
+          >
+            Liked Songs
+          </Text>
+          <Text
+            style={[
+              styles.ctaSubtitle,
+              {
+                fontFamily: fonts.family,
+                color: colors.textMuted,
+                fontSize: isBW ? 15 : 12,
+                letterSpacing: isBW ? 0.5 : 0,
+              },
+            ]}
+          >
+            View favorites →
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -225,27 +375,97 @@ export default function LibraryPage() {
       {tracks.length > 0 && (
         <View style={[styles.ctaRow, s.flexRow, s.mb4]}>
           <TouchableOpacity
-            style={[styles.ctaCard, s.flex1, s.p3, s.rounded, s.alignItemsCenter]}
+            style={[
+              styles.ctaCard,
+              s.flex1,
+              s.p3,
+              s.rounded,
+              s.alignItemsCenter,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              isBW && { paddingVertical: 18, paddingHorizontal: 14 },
+            ]}
             activeOpacity={0.7}
             onPress={handlePlayAll}
           >
-            <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2]}>
-              <Ionicons name="play" size={22} color="#ffffff" />
+            <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2, { backgroundColor: colors.cardIconBg }]}>
+              <Ionicons name="play" size={24} color={colors.textPrimary} />
             </View>
-            <Text style={[styles.ctaTitle, s.textWhite, s.mb1]}>Play All</Text>
-            <Text style={[styles.ctaSubtitle, s.textSecondary]}>Start from top</Text>
+            <Text
+              style={[
+                styles.ctaTitle,
+                s.mb1,
+                {
+                  fontFamily: fonts.familyBold,
+                  color: colors.textPrimary,
+                  fontSize: isBW ? 19 : 15,
+                  letterSpacing: isBW ? 1 : 0,
+                  fontWeight: isBW ? undefined : '600',
+                  marginBottom: isBW ? 4 : 2,
+                },
+              ]}
+            >
+              Play All
+            </Text>
+            <Text
+              style={[
+                styles.ctaSubtitle,
+                {
+                  fontFamily: fonts.family,
+                  color: colors.textMuted,
+                  fontSize: isBW ? 15 : 12,
+                  letterSpacing: isBW ? 0.5 : 0,
+                },
+              ]}
+            >
+              Start from top
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.ctaCard, s.flex1, s.p3, s.rounded, s.alignItemsCenter]}
+            style={[
+              styles.ctaCard,
+              s.flex1,
+              s.p3,
+              s.rounded,
+              s.alignItemsCenter,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              isBW && { paddingVertical: 18, paddingHorizontal: 14 },
+            ]}
             activeOpacity={0.7}
             onPress={handleShuffleAll}
           >
-            <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2]}>
-              <Ionicons name="shuffle" size={22} color="#ffffff" />
+            <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2, { backgroundColor: colors.cardIconBg }]}>
+              <Ionicons name="shuffle" size={24} color={colors.textPrimary} />
             </View>
-            <Text style={[styles.ctaTitle, s.textWhite, s.mb1]}>Shuffle All</Text>
-            <Text style={[styles.ctaSubtitle, s.textSecondary]}>Play in random order</Text>
+            <Text
+              style={[
+                styles.ctaTitle,
+                s.mb1,
+                {
+                  fontFamily: fonts.familyBold,
+                  color: colors.textPrimary,
+                  fontSize: isBW ? 19 : 15,
+                  letterSpacing: isBW ? 1 : 0,
+                  fontWeight: isBW ? undefined : '600',
+                  marginBottom: isBW ? 4 : 2,
+                },
+              ]}
+            >
+              Shuffle All
+            </Text>
+            <Text
+              style={[
+                styles.ctaSubtitle,
+                {
+                  fontFamily: fonts.family,
+                  color: colors.textMuted,
+                  fontSize: isBW ? 15 : 12,
+                  letterSpacing: isBW ? 0.5 : 0,
+                },
+              ]}
+            >
+              Play in random order
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -253,11 +473,11 @@ export default function LibraryPage() {
       {/* Track list / empty state */}
       {tracks.length === 0 ? (
         <View style={[styles.emptyState, s.flex1, s.alignItemsCenter, s.justifyContentCenter]}>
-          <View style={[styles.emptyIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb3]}>
-            <Ionicons name="musical-notes-outline" size={36} color="#ffffff" />
+          <View style={[styles.emptyIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb3, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Ionicons name="musical-notes-outline" size={36} color={colors.textPrimary} />
           </View>
-          <Text style={[styles.emptyTitle, s.textWhite, s.mb1]}>No songs yet</Text>
-          <Text style={[styles.emptySubtitle, s.textSecondary]}>
+          <Text style={[styles.emptyTitle, s.mb1, { fontFamily: fonts.familyBold, color: colors.textPrimary }]}>No songs yet</Text>
+          <Text style={[styles.emptySubtitle, { fontFamily: fonts.family, color: colors.textMuted }]}>
             Import your first track to get started
           </Text>
         </View>
@@ -272,8 +492,8 @@ export default function LibraryPage() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={Colors.primary}
-              colors={[Colors.primary]}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
         />
@@ -295,6 +515,19 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: 'Inter-Bold',
     fontWeight: '700',
+  },
+  themePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  themePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
   },
   ctaRow: {
     gap: 12,

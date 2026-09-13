@@ -80,11 +80,13 @@ interface Row {
 
 const rows: Row[] = [];
 let nextId = 1;
+const settingsStore = new Map<string, string>();
 
 /** Clears all rows so each test starts with a fresh database. */
 export function resetInMemoryDb() {
   rows.length = 0;
   nextId = 1;
+  settingsStore.clear();
 }
 
 vi.mock('expo-sqlite', () => ({
@@ -94,6 +96,11 @@ vi.mock('expo-sqlite', () => ({
 
     // INSERT, UPDATE, DELETE
     runAsync: vi.fn(async (sql: string, ...params: any[]) => {
+      if (sql.includes('INSERT INTO settings') || sql.includes('INSERT OR REPLACE INTO settings')) {
+        const [key, value] = params;
+        settingsStore.set(key, String(value));
+        return { changes: 1 };
+      }
       if (sql.includes('INSERT INTO tracks')) {
         const [title, artist, album, fileUri, duration, artworkUri] = params;
         const row: Row = {
@@ -142,7 +149,14 @@ vi.mock('expo-sqlite', () => ({
       return [...rows];
     }),
 
-    getFirstAsync: vi.fn(async (_sql: string, ...params: any[]) => {
+    getFirstAsync: vi.fn(async (sql: string, ...params: any[]) => {
+      if (sql.includes('FROM settings WHERE key = ?')) {
+        const key = params[0];
+        if (settingsStore.has(key)) {
+          return { value: settingsStore.get(key)! };
+        }
+        return null;
+      }
       return rows.find((r) => r.id === params[0]) || null;
     }),
   })),

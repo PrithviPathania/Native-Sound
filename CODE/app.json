@@ -9,7 +9,15 @@
     "scheme": "nativesound",
     "plugins": [
       "expo-router",
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/A Box For.ttf",
+            "./assets/fonts/A Box For 2.ttf"
+          ]
+        }
+      ],
       "expo-sqlite",
       "expo-audio",
       "expo-asset"

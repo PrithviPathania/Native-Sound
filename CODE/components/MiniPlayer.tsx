@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/theme';
 import { s } from '../styles/bootstrap';
 import { useAudio } from '../context/AudioContext';
+import { useTheme } from '../context/ThemeContext';
 
 function clamp(val: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, val));
@@ -14,6 +15,7 @@ export default function MiniPlayer() {
   const router = useRouter();
   const pathname = usePathname();
   const { currentTrack, isPlaying, togglePlayPause, currentTime, duration } = useAudio();
+  const { colors, fonts, isBW } = useTheme();
 
   // Don't render if no track is loaded or if player modal is open
   if (!currentTrack || pathname === '/player' || pathname?.includes('/player')) {
@@ -24,10 +26,10 @@ export default function MiniPlayer() {
   const progressPct = duration > 0 ? clamp(currentTime / duration, 0, 1) * 100 : 0;
 
   return (
-    <View style={[styles.container, s.flexRow, s.alignItemsCenter]}>
+    <View style={[styles.container, s.flexRow, s.alignItemsCenter, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
       {/* 2px top progress bar */}
       <View style={styles.progressBarTrack}>
-        <View style={[styles.progressBarFill, { width: `${progressPct}%` }]} />
+        <View style={[styles.progressBarFill, { width: `${progressPct}%`, backgroundColor: colors.primary }]} />
       </View>
 
       {/* Tap info area to expand full player modal */}
@@ -43,7 +45,7 @@ export default function MiniPlayer() {
         }}
       >
         {/* 40x40 Thumbnail with rounded-2 */}
-        <View style={[styles.thumbnail, s.rounded, s.alignItemsCenter, s.justifyContentCenter]}>
+        <View style={[styles.thumbnail, s.rounded, s.alignItemsCenter, s.justifyContentCenter, { backgroundColor: colors.background, borderColor: colors.border }]}>
           {currentTrack.artworkUri ? (
             <Image source={{ uri: currentTrack.artworkUri }} style={styles.thumbnailImage} />
           ) : (
@@ -53,10 +55,33 @@ export default function MiniPlayer() {
 
         {/* Track info column */}
         <View style={[s.flex1, s.flexColumn, s.justifyContentCenter]}>
-          <Text style={[styles.title, s.textWhite]} numberOfLines={1}>
+          <Text
+            style={[
+              styles.title,
+              {
+                fontFamily: fonts.familyBold,
+                color: colors.textPrimary,
+                fontSize: isBW ? 16 : 14,
+                letterSpacing: isBW ? 0.5 : 0,
+                fontWeight: isBW ? undefined : '600',
+              },
+            ]}
+            numberOfLines={1}
+          >
             {currentTrack.title}
           </Text>
-          <Text style={[styles.artist, s.textSecondary]} numberOfLines={1}>
+          <Text
+            style={[
+              styles.artist,
+              {
+                fontFamily: fonts.family,
+                color: colors.textMuted,
+                fontSize: isBW ? 14 : 12,
+                letterSpacing: isBW ? 0.5 : 0,
+              },
+            ]}
+            numberOfLines={1}
+          >
             {currentTrack.artist}
           </Text>
         </View>
@@ -64,12 +89,12 @@ export default function MiniPlayer() {
 
       {/* Play / Pause button with rounded-circle & primary background */}
       <TouchableOpacity
-        style={[styles.playBtn, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter]}
+        style={[styles.playBtn, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, { backgroundColor: colors.primary }]}
         activeOpacity={0.8}
         onPress={togglePlayPause}
         accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
       >
-        <Ionicons name={isPlaying ? 'pause' : 'play'} size={20} color="#ffffff" />
+        <Ionicons name={isPlaying ? 'pause' : 'play'} size={20} color={isBW ? '#000000' : '#ffffff'} />
       </TouchableOpacity>
     </View>
   );

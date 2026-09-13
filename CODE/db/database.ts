@@ -33,6 +33,10 @@ export async function initDatabase(): Promise<void> {
       is_liked    INTEGER NOT NULL DEFAULT 0,
       date_added  TEXT    DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS settings (
+      key         TEXT    PRIMARY KEY NOT NULL,
+      value       TEXT    NOT NULL
+    );
   `);
 
   // Safe migrations if table pre-existed with older columns
@@ -243,4 +247,34 @@ export async function deleteTrack(id: number): Promise<void> {
   }
 
   await database.runAsync('DELETE FROM tracks WHERE id = ?', id);
+}
+
+// ---------------------------------------------------------------------------
+// Settings Key-Value Storage
+// ---------------------------------------------------------------------------
+export async function getSetting(key: string, defaultValue: string = ''): Promise<string> {
+  try {
+    const database = await getDb();
+    const row = await database.getFirstAsync<{ value: string }>(
+      'SELECT value FROM settings WHERE key = ?',
+      key
+    );
+    return row?.value ?? defaultValue;
+  } catch (err) {
+    console.warn(`[DB] Failed to get setting "${key}":`, err);
+    return defaultValue;
+  }
+}
+
+export async function setSetting(key: string, value: string): Promise<void> {
+  try {
+    const database = await getDb();
+    await database.runAsync(
+      'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+      key,
+      value
+    );
+  } catch (err) {
+    console.warn(`[DB] Failed to set setting "${key}":`, err);
+  }
 }

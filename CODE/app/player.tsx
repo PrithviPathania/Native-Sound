@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/theme';
 import { s } from '../styles/bootstrap';
 import { useAudio } from '../context/AudioContext';
+import { useTheme } from '../context/ThemeContext';
 import type { Track } from '../types/track';
 
 // ---------------------------------------------------------------------------
@@ -225,6 +226,7 @@ function QueueItemRow({
   onSwap,
   onRemove,
 }: QueueItemRowProps) {
+  const { colors, fonts, isBW } = useTheme();
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [swipeX, setSwipeX] = useState(0);
@@ -313,8 +315,8 @@ function QueueItemRow({
         activeOpacity={0.8}
         accessibilityLabel={`Remove ${item.title} from queue`}
       >
-        <Ionicons name="trash-outline" size={18} color={Colors.textMuted} style={styles.deleteIcon} />
-        <Text style={styles.deleteText}>Remove</Text>
+        <Ionicons name="trash-outline" size={18} color={colors.textMuted} style={styles.deleteIcon} />
+        <Text style={[styles.deleteText, { color: colors.textMuted, fontFamily: fonts.family }]}>Remove</Text>
       </TouchableOpacity>
 
       {/* Foreground queue row */}
@@ -326,7 +328,8 @@ function QueueItemRow({
           s.alignItemsCenter,
           s.py2,
           s.px2,
-          isDragging && styles.queueItemRowDragging,
+          { backgroundColor: colors.surface },
+          isDragging && { backgroundColor: colors.activeRowBg, borderColor: colors.primary, borderWidth: 1, zIndex: 99 },
           {
             transform: [
               { translateY: clamp(dragOffset, -40, 40) },
@@ -343,9 +346,9 @@ function QueueItemRow({
         >
           <View style={[styles.queueIndexBox, s.alignItemsCenter, s.justifyContentCenter]}>
             {isRepeatingCurrent ? (
-              <Ionicons name="repeat" size={14} color={Colors.primary} />
+              <Ionicons name="repeat" size={14} color={colors.primary} />
             ) : (
-              <Text style={styles.queueIndexText}>{index + 1}</Text>
+              <Text style={[styles.queueIndexText, { color: colors.textMuted, fontFamily: fonts.family }]}>{index + 1}</Text>
             )}
           </View>
 
@@ -353,21 +356,55 @@ function QueueItemRow({
             {item.artworkUri ? (
               <Image source={{ uri: item.artworkUri }} style={styles.queueItemArtImage} />
             ) : (
-              <Ionicons name="musical-note" size={16} color="#888888" />
+              <Ionicons name="musical-note" size={16} color={colors.textMuted} />
             )}
           </View>
 
           <View style={[s.flex1, s.mr2]}>
-            <Text style={[styles.queueItemTitle, s.textWhite]} numberOfLines={1}>
+            <Text
+              style={[
+                styles.queueItemTitle,
+                {
+                  fontFamily: fonts.familyBold,
+                  color: colors.textPrimary,
+                  fontSize: isBW ? 17 : 14,
+                  letterSpacing: isBW ? 0.5 : 0,
+                  fontWeight: isBW ? undefined : '600',
+                },
+              ]}
+              numberOfLines={1}
+            >
               {item.title}
             </Text>
-            <Text style={[styles.queueItemArtist, s.textSecondary]} numberOfLines={1}>
+            <Text
+              style={[
+                styles.queueItemArtist,
+                {
+                  fontFamily: fonts.family,
+                  color: colors.textMuted,
+                  fontSize: isBW ? 14 : 12,
+                  letterSpacing: isBW ? 0.5 : 0,
+                },
+              ]}
+              numberOfLines={1}
+            >
               {item.artist || 'Unknown Artist'}
             </Text>
           </View>
 
           {item.duration ? (
-            <Text style={[styles.queueItemDuration, s.textSecondary, s.mr2]}>
+            <Text
+              style={[
+                styles.queueItemDuration,
+                {
+                  fontFamily: fonts.family,
+                  color: colors.textMuted,
+                  fontSize: isBW ? 14 : 12,
+                  letterSpacing: isBW ? 0.5 : 0,
+                },
+                s.mr2,
+              ]}
+            >
               {formatTime(item.duration)}
             </Text>
           ) : null}
@@ -384,7 +421,7 @@ function QueueItemRow({
           <Ionicons
             name="reorder-three-outline"
             size={24}
-            color={isDragging ? Colors.primary : Colors.textMuted}
+            color={isDragging ? colors.primary : colors.textMuted}
           />
         </View>
       </View>
@@ -397,6 +434,7 @@ function QueueItemRow({
 // ---------------------------------------------------------------------------
 export default function PlayerScreen() {
   const router = useRouter();
+  const { colors, fonts, isBW } = useTheme();
   const {
     currentTrack,
     queue,
@@ -606,9 +644,9 @@ export default function PlayerScreen() {
 
   const renderEmptyQueue = () => (
     <View style={[styles.emptyQueueContainer, s.alignItemsCenter, s.justifyContentCenter, s.py4]}>
-      <Ionicons name="file-tray-outline" size={32} color={Colors.textMuted} />
-      <Text style={[styles.emptyQueueTitle, s.textWhite, s.mt2]}>End of Queue</Text>
-      <Text style={[styles.emptyQueueSubtext, s.textSecondary, s.mt1]}>
+      <Ionicons name="file-tray-outline" size={32} color={colors.textMuted} />
+      <Text style={[styles.emptyQueueTitle, { fontFamily: fonts.familyBold, color: colors.textPrimary }, s.mt2]}>End of Queue</Text>
+      <Text style={[styles.emptyQueueSubtext, { fontFamily: fonts.family, color: colors.textMuted }, s.mt1]}>
         Enable Repeat to loop, or add more songs to your library.
       </Text>
     </View>
@@ -624,6 +662,7 @@ export default function PlayerScreen() {
         s.px3,
         s.pb4,
         {
+          backgroundColor: colors.surface,
           opacity: modalOpacity,
           transform: [{ translateY: modalTranslateY }],
         },
@@ -641,7 +680,21 @@ export default function PlayerScreen() {
           style={s.alignItemsCenter}
         >
           <Ionicons name="chevron-down" size={24} color="#ffffff" />
-          <Text style={[styles.dismissLabel, s.textSecondary]}>Player</Text>
+          <Text
+            style={[
+              styles.dismissLabel,
+              s.textSecondary,
+              {
+                fontFamily: fonts.family,
+                color: colors.textMuted,
+                fontSize: isBW ? 13 : 12,
+                letterSpacing: isBW ? 2 : 1.5,
+                fontWeight: isBW ? undefined : 'normal',
+              },
+            ]}
+          >
+            Player
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -661,10 +714,10 @@ export default function PlayerScreen() {
         >
           {/* Minimized Now Playing Bar */}
           <View
-            style={[styles.minimizedHeader, s.flexRow, s.alignItemsCenter, s.w100, s.mb2]}
+            style={[styles.minimizedHeader, s.flexRow, s.alignItemsCenter, s.w100, s.mb2, { backgroundColor: colors.surface, borderColor: colors.border }]}
             {...swipePanResponder.panHandlers}
           >
-            <View style={[styles.minimizedArt, s.alignItemsCenter, s.justifyContentCenter]}>
+            <View style={[styles.minimizedArt, s.alignItemsCenter, s.justifyContentCenter, { backgroundColor: colors.background }]}>
               {currentTrack?.artworkUri ? (
                 <Image source={{ uri: currentTrack.artworkUri }} style={styles.minimizedArtImage} />
               ) : (
@@ -672,10 +725,33 @@ export default function PlayerScreen() {
               )}
             </View>
             <View style={s.flex1}>
-              <Text style={[styles.minimizedTitle, s.textWhite]} numberOfLines={1}>
+              <Text
+                style={[
+                  styles.minimizedTitle,
+                  {
+                    fontFamily: fonts.familyBold,
+                    color: colors.textPrimary,
+                    fontSize: isBW ? 18 : 15,
+                    letterSpacing: isBW ? 0.6 : 0,
+                    fontWeight: isBW ? undefined : '700',
+                  },
+                ]}
+                numberOfLines={1}
+              >
                 {title}
               </Text>
-              <Text style={[styles.minimizedArtist, s.textSecondary]} numberOfLines={1}>
+              <Text
+                style={[
+                  styles.minimizedArtist,
+                  {
+                    fontFamily: fonts.family,
+                    color: colors.textMuted,
+                    fontSize: isBW ? 15 : 13,
+                    letterSpacing: isBW ? 0.5 : 0,
+                  },
+                ]}
+                numberOfLines={1}
+              >
                 {artist}
               </Text>
             </View>
@@ -688,7 +764,7 @@ export default function PlayerScreen() {
               <Ionicons
                 name={isLiked ? 'heart' : 'heart-outline'}
                 size={20}
-                color={isLiked ? Colors.danger : '#ffffff'}
+                color={isLiked ? colors.danger : '#ffffff'}
               />
             </TouchableOpacity>
           </View>
@@ -696,11 +772,47 @@ export default function PlayerScreen() {
           {/* Section Header: Up Next + count + mode */}
           <View style={[styles.queueSectionHeader, s.flexRow, s.justifyContentBetween, s.alignItemsCenter, s.w100, s.px1, s.mb2]}>
             <View>
-              <Text style={styles.queueSectionTitle}>Up Next</Text>
-              <Text style={styles.queueSectionSubtitle}>{getQueueSubtitle()}</Text>
+              <Text
+                style={[
+                  styles.queueSectionTitle,
+                  {
+                    fontFamily: fonts.familyBold,
+                    color: colors.textPrimary,
+                    fontSize: isBW ? 20 : 16,
+                    letterSpacing: isBW ? 0.8 : 0,
+                    fontWeight: isBW ? undefined : '700',
+                  },
+                ]}
+              >
+                Up Next
+              </Text>
+              <Text
+                style={[
+                  styles.queueSectionSubtitle,
+                  {
+                    fontFamily: fonts.family,
+                    color: colors.textMuted,
+                    fontSize: isBW ? 14 : 12,
+                    letterSpacing: isBW ? 0.5 : 0,
+                  },
+                ]}
+              >
+                {getQueueSubtitle()}
+              </Text>
             </View>
-            <View style={styles.queueBadge}>
-              <Text style={styles.queueBadgeText}>
+            <View style={[styles.queueBadge, { backgroundColor: colors.activeRowBg, borderColor: isBW ? 'rgba(255, 255, 255, 0.3)' : 'rgba(13, 110, 253, 0.3)' }]}>
+              <Text
+                style={[
+                  styles.queueBadgeText,
+                  {
+                    color: colors.primary,
+                    fontFamily: fonts.familyBold,
+                    fontSize: isBW ? 13 : 11,
+                    letterSpacing: isBW ? 0.5 : 0,
+                    fontWeight: isBW ? undefined : '600',
+                  },
+                ]}
+              >
                 {queue.length} {queue.length === 1 ? 'track' : 'tracks'}
               </Text>
             </View>
@@ -744,10 +856,37 @@ export default function PlayerScreen() {
 
           {/* Standard View: Track Title + Artist */}
           <View style={[styles.trackInfo, s.alignItemsCenter, s.w100]}>
-            <Text style={[styles.trackTitle, s.textWhite, { textAlign: 'center' }]} numberOfLines={2}>
+            <Text
+              style={[
+                styles.trackTitle,
+                {
+                  fontFamily: fonts.familyBold,
+                  color: colors.textPrimary,
+                  textAlign: 'center',
+                  fontSize: isBW ? 28 : 22,
+                  letterSpacing: isBW ? 1 : 0,
+                  fontWeight: isBW ? undefined : '700',
+                  marginBottom: isBW ? 8 : 6,
+                },
+              ]}
+              numberOfLines={2}
+            >
               {title}
             </Text>
-            <Text style={[styles.trackArtist, s.textSecondary, { textAlign: 'center' }]}>{artist}</Text>
+            <Text
+              style={[
+                styles.trackArtist,
+                {
+                  fontFamily: fonts.family,
+                  color: colors.textMuted,
+                  textAlign: 'center',
+                  fontSize: isBW ? 18 : 16,
+                  letterSpacing: isBW ? 0.5 : 0,
+                },
+              ]}
+            >
+              {artist}
+            </Text>
           </View>
         </Animated.View>
       )}
@@ -760,13 +899,13 @@ export default function PlayerScreen() {
             value={progress}
             onValueChange={(ratio) => setScrubRatio(ratio)}
             onSlidingComplete={handleProgressComplete}
-            activeTrackColor={Colors.primary}
-            trackColor={Colors.border}
-            thumbColor={Colors.primary}
+            activeTrackColor={colors.primary}
+            trackColor={colors.border}
+            thumbColor={colors.primary}
           />
           <View style={[s.flexRow, s.justifyContentBetween, s.alignItemsCenter, s.mt1]}>
-            <Text style={[styles.timeText, s.textSecondary]}>{formatTime(displayedTime)}</Text>
-            <Text style={[styles.timeText, s.textSecondary]}>-{formatTime(displayedRemaining)}</Text>
+            <Text style={[styles.timeText, { fontFamily: fonts.family, color: colors.textMuted, fontSize: isBW ? 14 : 12, letterSpacing: isBW ? 0.5 : 0 }]}>{formatTime(displayedTime)}</Text>
+            <Text style={[styles.timeText, { fontFamily: fonts.family, color: colors.textMuted, fontSize: isBW ? 14 : 12, letterSpacing: isBW ? 0.5 : 0 }]}>-{formatTime(displayedRemaining)}</Text>
           </View>
         </View>
 
@@ -783,13 +922,13 @@ export default function PlayerScreen() {
 
           {/* Play / Pause button */}
           <TouchableOpacity
-            style={[styles.playBtn, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter]}
+            style={[styles.playBtn, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, { backgroundColor: colors.primary }]}
             onPress={togglePlayPause}
             disabled={!currentTrack}
             activeOpacity={0.8}
             accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
           >
-            <Ionicons name={isPlaying ? 'pause' : 'play'} size={30} color="#ffffff" />
+            <Ionicons name={isPlaying ? 'pause' : 'play'} size={30} color={isBW ? '#000000' : '#ffffff'} />
           </TouchableOpacity>
 
           {/* Next track */}
@@ -810,7 +949,7 @@ export default function PlayerScreen() {
               styles.secondaryBtn,
               s.alignItemsCenter,
               s.justifyContentCenter,
-              isShuffled && styles.secondaryBtnActive,
+              isShuffled && { backgroundColor: colors.activeRowBg, borderRadius: 22 },
             ]}
             onPress={toggleShuffle}
             accessibilityLabel="Toggle shuffle"
@@ -818,7 +957,7 @@ export default function PlayerScreen() {
             <Ionicons
               name="shuffle"
               size={22}
-              color={isShuffled ? Colors.primary : '#ffffff'}
+              color={isShuffled ? colors.primary : '#ffffff'}
             />
           </TouchableOpacity>
 
@@ -832,7 +971,7 @@ export default function PlayerScreen() {
             <Ionicons
               name={isLiked ? 'heart' : 'heart-outline'}
               size={22}
-              color={isLiked ? Colors.danger : '#ffffff'}
+              color={isLiked ? colors.danger : '#ffffff'}
             />
           </TouchableOpacity>
 
@@ -842,7 +981,7 @@ export default function PlayerScreen() {
               styles.secondaryBtn,
               s.alignItemsCenter,
               s.justifyContentCenter,
-              repeatMode !== 'off' && styles.secondaryBtnActive,
+              repeatMode !== 'off' && { backgroundColor: colors.activeRowBg, borderRadius: 22 },
               { position: 'relative' },
             ]}
             onPress={toggleRepeat}
@@ -851,11 +990,11 @@ export default function PlayerScreen() {
             <Ionicons
               name="repeat"
               size={22}
-              color={repeatMode !== 'off' ? Colors.primary : '#ffffff'}
+              color={repeatMode !== 'off' ? colors.primary : '#ffffff'}
             />
             {repeatMode === 'one' && (
-              <View style={styles.repeatBadge}>
-                <Text style={styles.repeatBadgeText}>1</Text>
+              <View style={[styles.repeatBadge, { backgroundColor: colors.primary }]}>
+                <Text style={[styles.repeatBadgeText, { color: isBW ? '#000000' : '#ffffff', fontFamily: fonts.familyBold }]}>1</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -866,7 +1005,7 @@ export default function PlayerScreen() {
               styles.secondaryBtn,
               s.alignItemsCenter,
               s.justifyContentCenter,
-              showQueue && styles.secondaryBtnActive,
+              showQueue && { backgroundColor: colors.activeRowBg, borderRadius: 22 },
             ]}
             onPress={() => setShowQueue((prev) => !prev)}
             accessibilityLabel="Toggle queue"
@@ -874,7 +1013,7 @@ export default function PlayerScreen() {
             <Ionicons
               name="list"
               size={22}
-              color={showQueue ? Colors.primary : '#ffffff'}
+              color={showQueue ? colors.primary : '#ffffff'}
             />
           </TouchableOpacity>
         </View>
@@ -887,9 +1026,9 @@ export default function PlayerScreen() {
               value={volume}
               onValueChange={setVolume}
               onSlidingComplete={setVolume}
-              activeTrackColor={Colors.textMuted}
-              trackColor={Colors.border}
-              thumbColor={Colors.textMuted}
+              activeTrackColor={colors.textMuted}
+              trackColor={colors.border}
+              thumbColor={colors.textMuted}
             />
           </View>
           <Ionicons name="volume-high-outline" size={20} color="#ffffff" />
