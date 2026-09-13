@@ -242,118 +242,117 @@ export default function LibraryPage() {
           </Text>
         </View>
 
-        {/* Theme Dropdown Trigger */}
-        <TouchableOpacity
-          style={[
-            styles.themePill,
-            { borderColor: colors.border, backgroundColor: colors.surface },
-            isBW && { paddingHorizontal: 12, paddingVertical: 6 },
-          ]}
-          onPress={() => setThemeMenuVisible(true)}
-          activeOpacity={0.7}
-          accessibilityLabel={`Current theme: ${themeMode === 'custom' ? 'Custom' : themeMode === 'bw' ? 'B&W' : 'Classic'}. Tap to choose theme.`}
-        >
-          <Ionicons
-            name={themeMode === 'custom' ? 'sparkles-outline' : themeMode === 'bw' ? 'contrast' : 'color-palette-outline'}
-            size={isBW ? 16 : 14}
-            color={colors.textPrimary}
-            style={{ marginRight: 6 }}
-          />
-          <Text
+        {/* Theme Dropdown Trigger Wrapper */}
+        <View style={styles.themeDropdownWrapper}>
+          <TouchableOpacity
             style={[
-              styles.themePillText,
-              {
-                fontFamily: fonts.familyBold,
-                color: colors.textPrimary,
-                fontSize: isBW ? 13 : 11,
-                letterSpacing: isBW ? 1.2 : 0.8,
-                fontWeight: isBW ? undefined : '700',
-              },
+              styles.themePill,
+              { borderColor: colors.border, backgroundColor: colors.surface },
+              isBW && { paddingHorizontal: 12, paddingVertical: 6 },
             ]}
+            onPress={() => setThemeMenuVisible((prev) => !prev)}
+            activeOpacity={0.7}
+            accessibilityLabel={`Current theme: ${themeMode === 'custom' ? 'Custom' : themeMode === 'bw' ? 'B&W' : 'Classic'}. Tap to choose theme.`}
           >
-            {themeMode === 'custom' ? 'CUSTOM' : themeMode === 'bw' ? 'B&W' : 'COLOR'}
-          </Text>
-          <Ionicons
-            name="chevron-down"
-            size={12}
-            color={colors.textMuted}
-            style={{ marginLeft: 5 }}
-          />
-        </TouchableOpacity>
+            <Ionicons
+              name={themeMode === 'custom' ? 'sparkles-outline' : themeMode === 'bw' ? 'contrast' : 'color-palette-outline'}
+              size={isBW ? 16 : 14}
+              color={colors.textPrimary}
+              style={{ marginRight: 6 }}
+            />
+            <Text
+              style={[
+                styles.themePillText,
+                {
+                  fontFamily: fonts.familyBold,
+                  color: colors.textPrimary,
+                  fontSize: isBW ? 13 : 11,
+                  letterSpacing: isBW ? 1.2 : 0.8,
+                  fontWeight: isBW ? undefined : '700',
+                },
+              ]}
+            >
+              {themeMode === 'custom' ? 'CUSTOM' : themeMode === 'bw' ? 'B&W' : 'COLOR'}
+            </Text>
+            <Ionicons
+              name="chevron-down"
+              size={12}
+              color={colors.textMuted}
+              style={{ marginLeft: 5 }}
+            />
+          </TouchableOpacity>
+
+          {/* Theme Dropdown Menu anchored right below the pill */}
+          {themeMenuVisible && (
+            <View
+              style={[
+                styles.dropdownMenu,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              {THEME_OPTIONS.map((opt) => {
+                const isSelected = themeMode === opt.key;
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={[
+                      styles.dropdownItem,
+                      isSelected && { backgroundColor: colors.activeRowBg },
+                    ]}
+                    onPress={() => {
+                      setThemeMode(opt.key);
+                      setThemeMenuVisible(false);
+                    }}
+                    activeOpacity={0.7}
+                    accessibilityLabel={`Switch to ${opt.label} theme`}
+                  >
+                    <Ionicons
+                      name={opt.icon}
+                      size={16}
+                      color={isSelected ? colors.primary : colors.textMuted}
+                      style={{ marginRight: 10 }}
+                    />
+                    <Text
+                      style={[
+                        styles.dropdownItemText,
+                        {
+                          fontFamily: fonts.familyBold,
+                          color: isSelected ? colors.primary : colors.textPrimary,
+                          fontSize: isBW ? 15 : 13,
+                          letterSpacing: isBW ? 0.8 : 0,
+                          fontWeight: isBW ? undefined : '600',
+                        },
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                    {isSelected && (
+                      <Ionicons
+                        name="checkmark"
+                        size={16}
+                        color={colors.primary}
+                        style={{ marginLeft: 'auto' }}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </View>
       </View>
 
-      {/* Theme Dropdown Modal */}
-      <Modal
-        visible={themeMenuVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setThemeMenuVisible(false)}
-      >
+      {/* Backdrop to dismiss dropdown on outside tap */}
+      {themeMenuVisible && (
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={styles.backdropOverlay}
           activeOpacity={1}
           onPress={() => setThemeMenuVisible(false)}
-        >
-          <View
-            style={[
-              styles.dropdownMenu,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                top: Math.max(insets.top, 16) + 48,
-              },
-            ]}
-          >
-            {THEME_OPTIONS.map((opt) => {
-              const isSelected = themeMode === opt.key;
-              return (
-                <TouchableOpacity
-                  key={opt.key}
-                  style={[
-                    styles.dropdownItem,
-                    isSelected && { backgroundColor: colors.activeRowBg },
-                  ]}
-                  onPress={() => {
-                    setThemeMode(opt.key);
-                    setThemeMenuVisible(false);
-                  }}
-                  activeOpacity={0.7}
-                  accessibilityLabel={`Switch to ${opt.label} theme`}
-                >
-                  <Ionicons
-                    name={opt.icon}
-                    size={16}
-                    color={isSelected ? colors.primary : colors.textMuted}
-                    style={{ marginRight: 10 }}
-                  />
-                  <Text
-                    style={[
-                      styles.dropdownItemText,
-                      {
-                        fontFamily: fonts.familyBold,
-                        color: isSelected ? colors.primary : colors.textPrimary,
-                        fontSize: isBW ? 15 : 13,
-                        letterSpacing: isBW ? 0.8 : 0,
-                        fontWeight: isBW ? undefined : '600',
-                      },
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                  {isSelected && (
-                    <Ionicons
-                      name="checkmark"
-                      size={16}
-                      color={colors.primary}
-                      style={{ marginLeft: 'auto' }}
-                    />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+        />
+      )}
 
       {/* Navigation CTAs — Row 1: Import & Liked Songs */}
       <View style={[styles.ctaRow, s.flexRow, s.mb3]}>
@@ -612,6 +611,7 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: 8,
     paddingBottom: 20,
+    zIndex: 1000,
   },
   headerIcon: { marginRight: 12 },
   headerTitle: {
@@ -655,6 +655,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // Custom Import Artwork Tile - Latest
   ctaImportImageBWFull: {
     width: '112%',
     height: '100%',
@@ -665,22 +666,33 @@ const styles = StyleSheet.create({
     height: '100%',
     transform: [{ translateX: -12 }],
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  themeDropdownWrapper: {
+    position: 'relative',
+    zIndex: 1001,
+  },
+  backdropOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
   },
   dropdownMenu: {
     position: 'absolute',
-    right: 16,
-    width: 170,
+    top: '100%',
+    right: 0,
+    marginTop: 1,
+    width: 165,
     borderRadius: Radii.large,
     borderWidth: 1,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.45,
     shadowRadius: 10,
-    elevation: 10,
+    elevation: 12,
+    zIndex: 9999,
     paddingVertical: 4,
   },
   dropdownItem: {

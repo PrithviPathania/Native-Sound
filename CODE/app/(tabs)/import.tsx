@@ -250,6 +250,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Bold',
     fontWeight: '600',
   },
+  // Custom Import Artwork Badge - Latest
   headerImportImageBW: {
     width: 48,
     height: 28,
