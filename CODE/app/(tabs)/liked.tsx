@@ -21,7 +21,7 @@ export default function LikedSongsPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { playTrack, currentTrack, isPlaying, toggleLike } = useAudio();
-  const { colors, fonts, isBW } = useTheme();
+  const { colors, fonts, isBW, isCustom } = useTheme();
 
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
@@ -209,6 +209,13 @@ export default function LikedSongsPage() {
 
       {/* Page header */}
       <View style={[styles.header, s.flexRow, s.alignItemsCenter, isBW && { paddingTop: 8, paddingBottom: 20 }]}>
+        {isCustom && (
+          <Image
+            source={require('../../assets/liked-icon.png')}
+            style={styles.headerLikedImageBW}
+            resizeMode="contain"
+          />
+        )}
         <Text
           style={[
             styles.pageTitle,
@@ -232,18 +239,26 @@ export default function LikedSongsPage() {
         </View>
       ) : tracks.length === 0 ? (
         <View style={[styles.emptyState, s.flex1, s.alignItemsCenter, s.justifyContentCenter]}>
-          <View
-            style={[
-              styles.emptyIconContainer,
-              s.roundedCircle,
-              s.alignItemsCenter,
-              s.justifyContentCenter,
-              s.mb3,
-              { backgroundColor: colors.activeRowBg, borderColor: isBW ? 'rgba(255, 255, 255, 0.3)' : 'rgba(220, 53, 69, 0.3)' },
-            ]}
-          >
-            <Ionicons name="heart" size={32} color={colors.danger} />
-          </View>
+          {isCustom ? (
+            <Image
+              source={require('../../assets/liked-icon.png')}
+              style={styles.emptyLikedImageBW}
+              resizeMode="contain"
+            />
+          ) : (
+            <View
+              style={[
+                styles.emptyIconContainer,
+                s.roundedCircle,
+                s.alignItemsCenter,
+                s.justifyContentCenter,
+                s.mb3,
+                { backgroundColor: colors.activeRowBg, borderColor: isBW ? 'rgba(255, 255, 255, 0.3)' : 'rgba(220, 53, 69, 0.3)' },
+              ]}
+            >
+              <Ionicons name="heart" size={32} color={colors.danger} />
+            </View>
+          )}
           <Text
             style={[
               styles.emptyTitle,
@@ -315,6 +330,16 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: 4,
     paddingBottom: 16,
+  },
+  headerLikedImageBW: {
+    width: 48,
+    height: 28,
+    marginRight: 10,
+  },
+  emptyLikedImageBW: {
+    width: 160,
+    height: 90,
+    marginBottom: 20,
   },
   heartBig: { marginRight: 12 },
   pageTitle: {

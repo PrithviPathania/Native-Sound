@@ -6,7 +6,7 @@ export const Radii = {
   large: 12,
 } as const;
 
-export type ThemeMode = 'default' | 'bw';
+export type ThemeMode = 'default' | 'bw' | 'custom';
 
 export interface ThemeColors {
   background: string;
@@ -99,13 +99,39 @@ export const BWTheme: Theme = {
   radii: Radii,
 };
 
+export const CustomTheme: Theme = {
+  name: 'custom',
+  displayName: 'Custom',
+  colors: {
+    ...BWTheme.colors,
+  },
+  fonts: {
+    family: 'A Box For',
+    familyBold: 'A Box For',
+  },
+  radii: Radii,
+};
+
+export interface ThemeOption {
+  key: ThemeMode;
+  label: string;
+  icon: 'color-palette-outline' | 'contrast' | 'sparkles-outline';
+}
+
+export const THEME_OPTIONS: ThemeOption[] = [
+  { key: 'default', label: 'Classic', icon: 'color-palette-outline' },
+  { key: 'bw', label: 'B&W', icon: 'contrast' },
+  { key: 'custom', label: 'Custom', icon: 'sparkles-outline' },
+];
+
 export const Themes: Record<ThemeMode, Theme> = {
   default: DefaultTheme,
   bw: BWTheme,
+  custom: CustomTheme,
 };
 
 // Legacy fallback tokens for components not yet migrated to useTheme()
 export const Colors = DefaultTheme.colors;
 export const Fonts = DefaultTheme.fonts;
 
-export default { Colors, Radii, Fonts, DefaultTheme, BWTheme, Themes };
+export default { Colors, Radii, Fonts, DefaultTheme, BWTheme, CustomTheme, Themes, THEME_OPTIONS };

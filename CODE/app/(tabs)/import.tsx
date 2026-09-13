@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radii } from '../../constants/theme';
@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function ImportPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { colors, fonts, isBW } = useTheme();
+  const { colors, fonts, isBW, isCustom } = useTheme();
   const [importing, setImporting] = useState(false);
 
   const handleBackToLibrary = () => {
@@ -85,22 +85,31 @@ export default function ImportPage() {
       </TouchableOpacity>
 
       {/* Page header */}
-      <Text
-        style={[
-          styles.pageTitle,
-          {
-            fontFamily: fonts.familyBold,
-            color: colors.textPrimary,
-            fontSize: isBW ? 34 : 28,
-            letterSpacing: isBW ? 1.2 : 0,
-            fontWeight: isBW ? undefined : '700',
-          },
-          s.mt1,
-          s.mb1,
-        ]}
-      >
-        Import Music
-      </Text>
+      <View style={[s.flexRow, s.alignItemsCenter, isBW && { paddingTop: 4, paddingBottom: 6 }]}>
+        {isCustom && (
+          <Image
+            source={require('../../assets/import-icon.png')}
+            style={styles.headerImportImageBW}
+            resizeMode="contain"
+          />
+        )}
+        <Text
+          style={[
+            styles.pageTitle,
+            {
+              fontFamily: fonts.familyBold,
+              color: colors.textPrimary,
+              fontSize: isBW ? 34 : 28,
+              letterSpacing: isBW ? 1.2 : 0,
+              fontWeight: isBW ? undefined : '700',
+            },
+            s.mt1,
+            s.mb1,
+          ]}
+        >
+          Import Music
+        </Text>
+      </View>
       <Text
         style={[
           styles.pageSubtitle,
@@ -240,6 +249,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter-Bold',
     fontWeight: '600',
+  },
+  headerImportImageBW: {
+    width: 48,
+    height: 28,
+    marginRight: 10,
   },
   pageTitle: {
     fontSize: 28,

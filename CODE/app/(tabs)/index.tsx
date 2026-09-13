@@ -8,10 +8,11 @@ import {
   Image,
   RefreshControl,
   Alert,
+  Modal,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
+import { Colors, Radii, THEME_OPTIONS } from '../../constants/theme';
 import { s } from '../../styles/bootstrap';
 import { useAudio } from '../../context/AudioContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -28,7 +29,8 @@ export function formatDuration(seconds?: number): string {
 export default function LibraryPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { colors, fonts, isBW, toggleTheme } = useTheme();
+  const { colors, fonts, isBW, isCustom, themeMode, setThemeMode, toggleTheme } = useTheme();
+  const [themeMenuVisible, setThemeMenuVisible] = useState(false);
   const {
     playTrack,
     currentTrack,
@@ -240,19 +242,19 @@ export default function LibraryPage() {
           </Text>
         </View>
 
-        {/* Theme Switcher Button */}
+        {/* Theme Dropdown Trigger */}
         <TouchableOpacity
           style={[
             styles.themePill,
             { borderColor: colors.border, backgroundColor: colors.surface },
             isBW && { paddingHorizontal: 12, paddingVertical: 6 },
           ]}
-          onPress={toggleTheme}
+          onPress={() => setThemeMenuVisible(true)}
           activeOpacity={0.7}
-          accessibilityLabel={`Current theme: ${isBW ? 'Black and White' : 'Classic'}. Tap to switch theme.`}
+          accessibilityLabel={`Current theme: ${themeMode === 'custom' ? 'Custom' : themeMode === 'bw' ? 'B&W' : 'Classic'}. Tap to choose theme.`}
         >
           <Ionicons
-            name={isBW ? 'contrast' : 'color-palette-outline'}
+            name={themeMode === 'custom' ? 'sparkles-outline' : themeMode === 'bw' ? 'contrast' : 'color-palette-outline'}
             size={isBW ? 16 : 14}
             color={colors.textPrimary}
             style={{ marginRight: 6 }}
@@ -269,10 +271,89 @@ export default function LibraryPage() {
               },
             ]}
           >
-            {isBW ? 'B&W' : 'COLOR'}
+            {themeMode === 'custom' ? 'CUSTOM' : themeMode === 'bw' ? 'B&W' : 'COLOR'}
           </Text>
+          <Ionicons
+            name="chevron-down"
+            size={12}
+            color={colors.textMuted}
+            style={{ marginLeft: 5 }}
+          />
         </TouchableOpacity>
       </View>
+
+      {/* Theme Dropdown Modal */}
+      <Modal
+        visible={themeMenuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setThemeMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setThemeMenuVisible(false)}
+        >
+          <View
+            style={[
+              styles.dropdownMenu,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                top: Math.max(insets.top, 16) + 48,
+              },
+            ]}
+          >
+            {THEME_OPTIONS.map((opt) => {
+              const isSelected = themeMode === opt.key;
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[
+                    styles.dropdownItem,
+                    isSelected && { backgroundColor: colors.activeRowBg },
+                  ]}
+                  onPress={() => {
+                    setThemeMode(opt.key);
+                    setThemeMenuVisible(false);
+                  }}
+                  activeOpacity={0.7}
+                  accessibilityLabel={`Switch to ${opt.label} theme`}
+                >
+                  <Ionicons
+                    name={opt.icon}
+                    size={16}
+                    color={isSelected ? colors.primary : colors.textMuted}
+                    style={{ marginRight: 10 }}
+                  />
+                  <Text
+                    style={[
+                      styles.dropdownItemText,
+                      {
+                        fontFamily: fonts.familyBold,
+                        color: isSelected ? colors.primary : colors.textPrimary,
+                        fontSize: isBW ? 15 : 13,
+                        letterSpacing: isBW ? 0.8 : 0,
+                        fontWeight: isBW ? undefined : '600',
+                      },
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                  {isSelected && (
+                    <Ionicons
+                      name="checkmark"
+                      size={16}
+                      color={colors.primary}
+                      style={{ marginLeft: 'auto' }}
+                    />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Navigation CTAs — Row 1: Import & Liked Songs */}
       <View style={[styles.ctaRow, s.flexRow, s.mb3]}>
@@ -280,94 +361,116 @@ export default function LibraryPage() {
           style={[
             styles.ctaCard,
             s.flex1,
-            s.p3,
             s.rounded,
             s.alignItemsCenter,
+            s.justifyContentCenter,
             { backgroundColor: colors.surface, borderColor: colors.border },
-            isBW && { paddingVertical: 18, paddingHorizontal: 14 },
+            isCustom ? styles.ctaCardArtworkBW : (isBW ? { paddingVertical: 12, paddingHorizontal: 12 } : s.p3),
           ]}
           activeOpacity={0.7}
           onPress={() => router.push('/(tabs)/import')}
+          accessibilityLabel="Import Songs"
         >
-          <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2, { backgroundColor: colors.cardIconBg }]}>
-            <Ionicons name="cloud-upload" size={24} color={colors.textPrimary} />
-          </View>
-          <Text
-            style={[
-              styles.ctaTitle,
-              s.mb1,
-              {
-                fontFamily: fonts.familyBold,
-                color: colors.textPrimary,
-                fontSize: isBW ? 19 : 15,
-                letterSpacing: isBW ? 1 : 0,
-                fontWeight: isBW ? undefined : '600',
-                marginBottom: isBW ? 4 : 2,
-              },
-            ]}
-          >
-            Import Songs
-          </Text>
-          <Text
-            style={[
-              styles.ctaSubtitle,
-              {
-                fontFamily: fonts.family,
-                color: colors.textMuted,
-                fontSize: isBW ? 15 : 12,
-                letterSpacing: isBW ? 0.5 : 0,
-              },
-            ]}
-          >
-            Add from local storage
-          </Text>
+          {isCustom ? (
+            <Image
+              source={require('../../assets/import-icon.png')}
+              style={styles.ctaImportImageBWFull}
+              resizeMode="cover"
+            />
+          ) : (
+            <>
+              <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2, { backgroundColor: colors.cardIconBg }]}>
+                <Ionicons name="cloud-upload" size={24} color={colors.textPrimary} />
+              </View>
+              <Text
+                style={[
+                  styles.ctaTitle,
+                  s.mb1,
+                  {
+                    fontFamily: fonts.familyBold,
+                    color: colors.textPrimary,
+                    fontSize: isBW ? 19 : 15,
+                    letterSpacing: isBW ? 1 : 0,
+                    fontWeight: isBW ? undefined : '600',
+                    marginBottom: isBW ? 4 : 2,
+                  },
+                ]}
+              >
+                Import Songs
+              </Text>
+              <Text
+                style={[
+                  styles.ctaSubtitle,
+                  {
+                    fontFamily: fonts.family,
+                    color: colors.textMuted,
+                    fontSize: isBW ? 15 : 12,
+                    letterSpacing: isBW ? 0.5 : 0,
+                  },
+                ]}
+              >
+                Add from local storage
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[
             styles.ctaCard,
             s.flex1,
-            s.p3,
             s.rounded,
             s.alignItemsCenter,
+            s.justifyContentCenter,
             { backgroundColor: colors.surface, borderColor: colors.border },
-            isBW && { paddingVertical: 18, paddingHorizontal: 14 },
+            isCustom ? styles.ctaCardArtworkBW : (isBW ? { paddingVertical: 12, paddingHorizontal: 12 } : s.p3),
           ]}
           activeOpacity={0.7}
           onPress={() => router.push('/(tabs)/liked')}
+          accessibilityLabel="Liked Songs"
         >
-          <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2, { backgroundColor: colors.cardIconLikedBg }]}>
-            <Ionicons name="heart" size={24} color={isBW ? colors.textPrimary : '#ffffff'} />
-          </View>
-          <Text
-            style={[
-              styles.ctaTitle,
-              s.mb1,
-              {
-                fontFamily: fonts.familyBold,
-                color: colors.textPrimary,
-                fontSize: isBW ? 19 : 15,
-                letterSpacing: isBW ? 1 : 0,
-                fontWeight: isBW ? undefined : '600',
-                marginBottom: isBW ? 4 : 2,
-              },
-            ]}
-          >
-            Liked Songs
-          </Text>
-          <Text
-            style={[
-              styles.ctaSubtitle,
-              {
-                fontFamily: fonts.family,
-                color: colors.textMuted,
-                fontSize: isBW ? 15 : 12,
-                letterSpacing: isBW ? 0.5 : 0,
-              },
-            ]}
-          >
-            View favorites →
-          </Text>
+          {isCustom ? (
+            <Image
+              source={require('../../assets/liked-icon.png')}
+              style={styles.ctaLikedImageBWFull}
+              resizeMode="cover"
+            />
+          ) : (
+            <>
+              <View style={[styles.ctaIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter, s.mb2, { backgroundColor: colors.cardIconLikedBg }]}>
+                <Ionicons name="heart" size={24} color={isBW ? colors.textPrimary : '#ffffff'} />
+              </View>
+              <Text
+                style={[
+                  styles.ctaTitle,
+                  s.mb1,
+                  {
+                    fontFamily: fonts.familyBold,
+                    color: colors.textPrimary,
+                    fontSize: isBW ? 19 : 15,
+                    letterSpacing: isBW ? 1 : 0,
+                    fontWeight: isBW ? undefined : '600',
+                    marginBottom: isBW ? 4 : 2,
+                  },
+                ]}
+              >
+                Liked Songs
+              </Text>
+              <Text
+                style={[
+                  styles.ctaSubtitle,
+                  {
+                    fontFamily: fonts.family,
+                    color: colors.textMuted,
+                    fontSize: isBW ? 15 : 12,
+                    letterSpacing: isBW ? 0.5 : 0,
+                  },
+                ]}
+              >
+                View favorites →
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -378,11 +481,11 @@ export default function LibraryPage() {
             style={[
               styles.ctaCard,
               s.flex1,
-              s.p3,
               s.rounded,
               s.alignItemsCenter,
+              s.justifyContentCenter,
               { backgroundColor: colors.surface, borderColor: colors.border },
-              isBW && { paddingVertical: 18, paddingHorizontal: 14 },
+              isBW && { paddingVertical: 12, paddingHorizontal: 12 },
             ]}
             activeOpacity={0.7}
             onPress={handlePlayAll}
@@ -425,11 +528,11 @@ export default function LibraryPage() {
             style={[
               styles.ctaCard,
               s.flex1,
-              s.p3,
               s.rounded,
               s.alignItemsCenter,
+              s.justifyContentCenter,
               { backgroundColor: colors.surface, borderColor: colors.border },
-              isBW && { paddingVertical: 18, paddingHorizontal: 14 },
+              isBW && { paddingVertical: 12, paddingHorizontal: 12 },
             ]}
             activeOpacity={0.7}
             onPress={handleShuffleAll}
@@ -536,6 +639,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
+    height: 128,
   },
   ctaIconContainer: {
     width: 44,
@@ -544,6 +648,49 @@ const styles = StyleSheet.create({
   },
   ctaIconLiked: {
     backgroundColor: 'rgba(220, 53, 69, 0.15)',
+  },
+  ctaCardArtworkBW: {
+    padding: 0,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ctaImportImageBWFull: {
+    width: '112%',
+    height: '100%',
+    transform: [{ translateX: -12 }],
+  },
+  ctaLikedImageBWFull: {
+    width: '112%',
+    height: '100%',
+    transform: [{ translateX: -12 }],
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    right: 16,
+    width: 170,
+    borderRadius: Radii.large,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 10,
+    paddingVertical: 4,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+  dropdownItemText: {
+    fontSize: 14,
   },
   ctaTitle: {
     fontSize: 15,

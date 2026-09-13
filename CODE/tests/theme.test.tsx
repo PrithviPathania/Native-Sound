@@ -2,14 +2,14 @@ import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
-import { DefaultTheme, BWTheme } from '../constants/theme';
+import { DefaultTheme, BWTheme, CustomTheme, THEME_OPTIONS } from '../constants/theme';
 import { getSetting, setSetting } from '../db/database';
 import { resetInMemoryDb } from './setup';
 import LibraryScreen from '../app/(tabs)/index';
 import { AudioProvider } from '../context/AudioContext';
 
 function ThemeConsumerTestComponent() {
-  const { themeMode, colors, fonts, isBW, toggleTheme, setThemeMode } = useTheme();
+  const { themeMode, colors, fonts, isBW, isCustom, toggleTheme, setThemeMode } = useTheme();
   return (
     <div>
       <span data-testid="mode">{themeMode}</span>
@@ -18,17 +18,21 @@ function ThemeConsumerTestComponent() {
       <span data-testid="primary-color">{colors.primary}</span>
       <span data-testid="danger-color">{colors.danger}</span>
       <span data-testid="is-bw">{isBW ? 'yes' : 'no'}</span>
+      <span data-testid="is-custom">{isCustom ? 'yes' : 'no'}</span>
       <button data-testid="toggle-btn" onClick={toggleTheme}>
         Toggle
       </button>
       <button data-testid="set-bw-btn" onClick={() => setThemeMode('bw')}>
         Set BW
       </button>
+      <button data-testid="set-custom-btn" onClick={() => setThemeMode('custom')}>
+        Set Custom
+      </button>
     </div>
   );
 }
 
-describe('Theme System & BW Theme', () => {
+describe('Theme System & Multi-Theme Architecture', () => {
   beforeEach(() => {
     resetInMemoryDb();
     vi.clearAllMocks();
@@ -50,6 +54,13 @@ describe('Theme System & BW Theme', () => {
       expect(BWTheme.colors.textPrimary).toBe('#ffffff');
       expect(BWTheme.colors.iconColor).toBe('#ffffff');
     });
+
+    it('defines CustomTheme with "A Box For" font and custom theme options', () => {
+      expect(CustomTheme.name).toBe('custom');
+      expect(CustomTheme.fonts.family).toBe('A Box For');
+      expect(THEME_OPTIONS).toHaveLength(3);
+      expect(THEME_OPTIONS.map((t) => t.key)).toEqual(['default', 'bw', 'custom']);
+    });
   });
 
   describe('Database Settings Key-Value Store', () => {
@@ -57,14 +68,14 @@ describe('Theme System & BW Theme', () => {
       const initial = await getSetting('theme', 'default');
       expect(initial).toBe('default');
 
-      await setSetting('theme', 'bw');
+      await setSetting('theme', 'custom');
       const updated = await getSetting('theme', 'default');
-      expect(updated).toBe('bw');
+      expect(updated).toBe('custom');
     });
   });
 
   describe('ThemeProvider & useTheme', () => {
-    it('renders with default theme and toggles to BW theme', async () => {
+    it('renders with default theme and cycles through BW and Custom themes', async () => {
       await act(async () => {
         render(
           <ThemeProvider>
@@ -78,20 +89,29 @@ describe('Theme System & BW Theme', () => {
       expect(screen.getByTestId('font').textContent).toBe('Inter');
       expect(screen.getByTestId('primary-color').textContent).toBe('#0d6efd');
       expect(screen.getByTestId('is-bw').textContent).toBe('no');
+      expect(screen.getByTestId('is-custom').textContent).toBe('no');
 
-      // Toggle to BW
+      // Cycle 1: default -> bw
       await act(async () => {
         fireEvent.click(screen.getByTestId('toggle-btn'));
       });
 
       expect(screen.getByTestId('mode').textContent).toBe('bw');
       expect(screen.getByTestId('font').textContent).toBe('A Box For');
-      expect(screen.getByTestId('font-bold').textContent).toBe('A Box For');
-      expect(screen.getByTestId('primary-color').textContent).toBe('#ffffff');
-      expect(screen.getByTestId('danger-color').textContent).toBe('#ffffff');
       expect(screen.getByTestId('is-bw').textContent).toBe('yes');
+      expect(screen.getByTestId('is-custom').textContent).toBe('no');
 
-      // Toggle back to default
+      // Cycle 2: bw -> custom
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('toggle-btn'));
+      });
+
+      expect(screen.getByTestId('mode').textContent).toBe('custom');
+      expect(screen.getByTestId('font').textContent).toBe('A Box For');
+      expect(screen.getByTestId('is-bw').textContent).toBe('yes');
+      expect(screen.getByTestId('is-custom').textContent).toBe('yes');
+
+      // Cycle 3: custom -> default
       await act(async () => {
         fireEvent.click(screen.getByTestId('toggle-btn'));
       });
@@ -99,6 +119,7 @@ describe('Theme System & BW Theme', () => {
       expect(screen.getByTestId('mode').textContent).toBe('default');
       expect(screen.getByTestId('font').textContent).toBe('Inter');
       expect(screen.getByTestId('is-bw').textContent).toBe('no');
+      expect(screen.getByTestId('is-custom').textContent).toBe('no');
     });
 
     it('persists theme selection in database', async () => {
@@ -111,16 +132,16 @@ describe('Theme System & BW Theme', () => {
       });
 
       await act(async () => {
-        fireEvent.click(screen.getByTestId('set-bw-btn'));
+        fireEvent.click(screen.getByTestId('set-custom-btn'));
       });
 
       const savedTheme = await getSetting('theme', 'default');
-      expect(savedTheme).toBe('bw');
+      expect(savedTheme).toBe('custom');
     });
   });
 
-  describe('Library Screen Theme Toggle Pill', () => {
-    it('renders the theme pill and toggles between COLOR and B&W', async () => {
+  describe('Library Screen Theme Dropdown', () => {
+    it('renders the theme dropdown trigger and switches themes', async () => {
       await act(async () => {
         render(
           <ThemeProvider>
@@ -131,16 +152,25 @@ describe('Theme System & BW Theme', () => {
         );
       });
 
-      const toggleButton = screen.getByLabelText(/Tap to switch theme/i);
-      expect(toggleButton).toBeDefined();
+      const dropdownTrigger = screen.getByLabelText(/Tap to choose theme/i);
+      expect(dropdownTrigger).toBeDefined();
       expect(screen.getByText('COLOR')).toBeDefined();
 
-      // Click to toggle
+      // Tap trigger to open dropdown
       await act(async () => {
-        fireEvent.click(toggleButton);
+        fireEvent.click(dropdownTrigger);
       });
 
-      expect(screen.getByText('B&W')).toBeDefined();
+      // Find options in modal
+      const customOption = screen.getByLabelText('Switch to Custom theme');
+      expect(customOption).toBeDefined();
+
+      // Click Custom option
+      await act(async () => {
+        fireEvent.click(customOption);
+      });
+
+      expect(screen.getByText('CUSTOM')).toBeDefined();
     });
   });
 });

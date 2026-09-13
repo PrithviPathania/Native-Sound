@@ -19,6 +19,7 @@ interface ThemeContextValue {
   colors: ThemeColors;
   fonts: ThemeTypography;
   isBW: boolean;
+  isCustom: boolean;
   setThemeMode: (mode: ThemeMode) => Promise<void>;
   toggleTheme: () => Promise<void>;
 }
@@ -34,7 +35,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     getSetting('theme', 'default')
       .then((savedMode) => {
-        if (!cancelled && !userChangedRef.current && (savedMode === 'default' || savedMode === 'bw')) {
+        if (
+          !cancelled &&
+          !userChangedRef.current &&
+          (savedMode === 'default' || savedMode === 'bw' || savedMode === 'custom')
+        ) {
           setMode(savedMode as ThemeMode);
         }
       })
@@ -57,7 +62,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = useCallback(async () => {
     userChangedRef.current = true;
     setMode((prev) => {
-      const next: ThemeMode = prev === 'default' ? 'bw' : 'default';
+      let next: ThemeMode = 'default';
+      if (prev === 'default') next = 'bw';
+      else if (prev === 'bw') next = 'custom';
+      else next = 'default';
       setSetting('theme', next).catch((err) =>
         console.warn('[ThemeContext] Failed to persist theme:', err)
       );
@@ -73,7 +81,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       themeMode,
       colors: activeTheme.colors,
       fonts: activeTheme.fonts,
-      isBW: themeMode === 'bw',
+      isBW: themeMode === 'bw' || themeMode === 'custom',
+      isCustom: themeMode === 'custom',
       setThemeMode,
       toggleTheme,
     }),
@@ -93,6 +102,7 @@ export function useTheme(): ThemeContextValue {
       colors: DefaultTheme.colors,
       fonts: DefaultTheme.fonts,
       isBW: false,
+      isCustom: false,
       setThemeMode: async () => {},
       toggleTheme: async () => {},
     };
