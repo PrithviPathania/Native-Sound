@@ -1,6 +1,6 @@
 // Native Sound — Global Audio Context
 // Provides a single AudioPlayer instance and global playback state.
-// Manages playback, shuffle, repeat, volume, seeking, and SQLite tracks.
+// Manages playback, shuffle, repeat, volume, seeking, SQLite tracks, and upcoming queue.
 
 import React, {
   createContext,
@@ -9,6 +9,7 @@ import React, {
   useEffect,
   useRef,
   useCallback,
+  useMemo,
   type ReactNode,
 } from 'react';
 import { Alert } from 'react-native';
@@ -22,13 +23,14 @@ export type RepeatMode = 'off' | 'all' | 'one';
 export interface AudioContextValue {
   currentTrack: Track | null;
   tracks: Track[];
+  queue: Track[];
   isPlaying: boolean;
   currentTime: number;   // seconds
   duration: number;      // seconds (0 when unknown)
   volume: number;        // 0.0–1.0
   isShuffled: boolean;
   repeatMode: RepeatMode;
-  playTrack: (track: Track) => Promise<void>;
+  playTrack: (track: Track, options?: { preserveCustomQueue?: boolean }) => Promise<void>;
   togglePlayPause: () => void;
   seekTo: (seconds: number) => Promise<void>;
   setVolume: (vol: number) => void;
@@ -42,6 +44,8 @@ export interface AudioContextValue {
   shuffleAll: () => Promise<void>;
   toggleShuffle: () => void;
   toggleRepeat: () => void;
+  reorderQueue: (fromIndex: number, toIndex: number) => void;
+  removeFromQueue: (index: number) => void;
 }
 
 const AudioContext = createContext<AudioContextValue | null>(null);
@@ -55,6 +59,55 @@ function shuffleArray<T>(arr: T[]): T[] {
   return shuffled;
 }
 
+export function buildShuffleQueue(allTracks: Track[], startWith?: Track | null): Track[] {
+  if (allTracks.length === 0) return [];
+  if (!startWith) {
+    return shuffleArray(allTracks);
+  }
+  const remaining = allTracks.filter((t) => t.id !== startWith.id);
+  return [startWith, ...shuffleArray(remaining)];
+}
+
+export function getUpcomingQueue({
+  currentTrack,
+  tracks,
+  isShuffled,
+  shuffleQueue,
+  repeatMode,
+}: {
+  currentTrack: Track | null;
+  tracks: Track[];
+  isShuffled: boolean;
+  shuffleQueue: Track[];
+  repeatMode: RepeatMode;
+}): Track[] {
+  if (!currentTrack || tracks.length === 0) return [];
+
+  const sourceList = isShuffled
+    ? (shuffleQueue.length > 0 ? shuffleQueue : tracks)
+    : tracks;
+
+  const currentIndex = sourceList.findIndex((t) => t.id === currentTrack.id);
+
+  if (repeatMode === 'one') {
+    const afterCurrent = currentIndex !== -1 ? sourceList.slice(currentIndex + 1) : [];
+    return [currentTrack, ...afterCurrent];
+  }
+
+  if (currentIndex === -1) {
+    return sourceList.filter((t) => t.id !== currentTrack.id);
+  }
+
+  const afterCurrent = sourceList.slice(currentIndex + 1);
+
+  if (repeatMode === 'all') {
+    const beforeCurrent = sourceList.slice(0, currentIndex);
+    return [...afterCurrent, ...beforeCurrent];
+  }
+
+  return afterCurrent;
+}
+
 export function AudioProvider({ children }: { children: ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -66,8 +119,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   // Shuffle & Repeat state
   const [isShuffled, setIsShuffled] = useState(false);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
+  const [shuffleQueue, setShuffleQueue] = useState<Track[]>([]);
+  const [customQueue, setCustomQueue] = useState<Track[] | null>(null);
+  const customQueueRef = useRef<Track[] | null>(null);
 
-  // Shuffle queue tracking
+  // Shuffle queue tracking ref
   const shuffleQueueRef = useRef<Track[]>([]);
   const shuffleIndexRef = useRef<number>(0);
 
@@ -137,7 +193,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   // playTrack
   const playTrack = useCallback(
-    async (track: Track) => {
+    async (track: Track, options?: { preserveCustomQueue?: boolean }) => {
       try {
         const trackUri = track.uri || track.fileUri;
         if (!trackUri) {
@@ -164,12 +220,42 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         setCurrentTime(0);
         setDuration(track.duration ?? 0);
         setIsPlaying(true);
+
+        if (!options?.preserveCustomQueue) {
+          setCustomQueue((prev) => {
+            if (!prev) {
+              customQueueRef.current = null;
+              return null;
+            }
+            const idx = prev.findIndex((t) => t.id === track.id);
+            if (idx !== -1) {
+              const nextRemaining = prev.slice(idx + 1);
+              const res = nextRemaining.length > 0 ? nextRemaining : null;
+              customQueueRef.current = res;
+              return res;
+            }
+            customQueueRef.current = null;
+            return null;
+          });
+        }
+
+        if (isShuffled) {
+          const idx = shuffleQueueRef.current.findIndex((t) => t.id === track.id);
+          if (idx !== -1) {
+            shuffleIndexRef.current = idx;
+          } else {
+            const newQueue = buildShuffleQueue(tracks, track);
+            shuffleQueueRef.current = newQueue;
+            shuffleIndexRef.current = 0;
+            setShuffleQueue(newQueue);
+          }
+        }
       } catch (err) {
         console.error('[AudioContext] playTrack error:', err);
         Alert.alert('Playback Error', 'Failed to load the audio file.');
       }
     },
-    [volume, subscribeToPlayer]
+    [volume, subscribeToPlayer, isShuffled, tracks]
   );
 
   const togglePlayPause = useCallback(() => {
@@ -204,30 +290,29 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Helper to build/refresh shuffle queue
-  const buildShuffleQueue = useCallback((allTracks: Track[], startWith?: Track | null) => {
-    if (allTracks.length === 0) return [];
-    if (!startWith) {
-      return shuffleArray(allTracks);
-    }
-    const remaining = allTracks.filter((t) => t.id !== startWith.id);
-    return [startWith, ...shuffleArray(remaining)];
-  }, []);
-
   // toggleShuffle
   const toggleShuffle = useCallback(() => {
+    customQueueRef.current = null;
+    setCustomQueue(null);
     setIsShuffled((prev) => {
       const nextState = !prev;
       if (nextState && tracks.length > 0) {
-        shuffleQueueRef.current = buildShuffleQueue(tracks, currentTrack);
+        const newQueue = buildShuffleQueue(tracks, currentTrack);
+        shuffleQueueRef.current = newQueue;
         shuffleIndexRef.current = 0;
+        setShuffleQueue(newQueue);
+      } else {
+        shuffleQueueRef.current = [];
+        setShuffleQueue([]);
       }
       return nextState;
     });
-  }, [tracks, currentTrack, buildShuffleQueue]);
+  }, [tracks, currentTrack]);
 
   // toggleRepeat
   const toggleRepeat = useCallback(() => {
+    customQueueRef.current = null;
+    setCustomQueue(null);
     setRepeatMode((prev) => {
       if (prev === 'off') return 'all';
       if (prev === 'all') return 'one';
@@ -238,19 +323,26 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   // playAll
   const playAll = useCallback(async () => {
     if (tracks.length === 0) return;
+    customQueueRef.current = null;
+    setCustomQueue(null);
     setIsShuffled(false);
+    shuffleQueueRef.current = [];
+    setShuffleQueue([]);
     await playTrack(tracks[0]);
   }, [tracks, playTrack]);
 
   // shuffleAll
   const shuffleAll = useCallback(async () => {
     if (tracks.length === 0) return;
-    const queue = buildShuffleQueue(tracks);
-    shuffleQueueRef.current = queue;
+    customQueueRef.current = null;
+    setCustomQueue(null);
+    const newQueue = buildShuffleQueue(tracks);
+    shuffleQueueRef.current = newQueue;
     shuffleIndexRef.current = 0;
+    setShuffleQueue(newQueue);
     setIsShuffled(true);
-    await playTrack(queue[0]);
-  }, [tracks, buildShuffleQueue, playTrack]);
+    await playTrack(newQueue[0]);
+  }, [tracks, playTrack]);
 
   // playNext
   const playNext = useCallback(async () => {
@@ -264,16 +356,32 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Advance from custom reordered queue if present
+    if (customQueueRef.current && customQueueRef.current.length > 0) {
+      const nextTrack = customQueueRef.current[0];
+      const nextRemaining = customQueueRef.current.slice(1);
+      const res = nextRemaining.length > 0 ? nextRemaining : null;
+      customQueueRef.current = res;
+      setCustomQueue(res);
+      await playTrack(nextTrack, { preserveCustomQueue: true });
+      return;
+    }
+
     if (isShuffled) {
       if (shuffleQueueRef.current.length === 0) {
-        shuffleQueueRef.current = buildShuffleQueue(tracks, currentTrack);
+        const newQueue = buildShuffleQueue(tracks, currentTrack);
+        shuffleQueueRef.current = newQueue;
         shuffleIndexRef.current = 0;
+        setShuffleQueue(newQueue);
       }
 
       let nextIdx = shuffleIndexRef.current + 1;
       if (nextIdx >= shuffleQueueRef.current.length) {
         if (repeatMode === 'all') {
-          shuffleQueueRef.current = buildShuffleQueue(tracks);
+          const newQueue = buildShuffleQueue(tracks);
+          shuffleQueueRef.current = newQueue;
+          shuffleIndexRef.current = 0;
+          setShuffleQueue(newQueue);
           nextIdx = 0;
         } else {
           setIsPlaying(false);
@@ -300,7 +408,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       }
       await playTrack(tracks[nextIdx]);
     }
-  }, [tracks, currentTrack, isShuffled, repeatMode, buildShuffleQueue, playTrack, seekTo]);
+  }, [tracks, currentTrack, isShuffled, repeatMode, playTrack, seekTo]);
 
   // Keep playNextRef up-to-date for auto-advance listener
   useEffect(() => {
@@ -396,6 +504,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     try {
       await deleteTrack(trackId);
       setTracks((prev) => prev.filter((t) => t.id !== trackId));
+      setShuffleQueue((prev) => prev.filter((t) => t.id !== trackId));
+      shuffleQueueRef.current = shuffleQueueRef.current.filter((t) => t.id !== trackId);
+      customQueueRef.current = customQueueRef.current
+        ? customQueueRef.current.filter((t) => t.id !== trackId)
+        : null;
+      setCustomQueue((prev) => (prev ? prev.filter((t) => t.id !== trackId) : null));
       setCurrentTrack((prev) => {
         if (prev && prev.id === trackId) {
           playerRef.current?.pause();
@@ -410,11 +524,84 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const reorderQueue = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      setCustomQueue((prev) => {
+        const base =
+          prev ??
+          getUpcomingQueue({
+            currentTrack,
+            tracks,
+            isShuffled,
+            shuffleQueue,
+            repeatMode,
+          });
+
+        if (
+          fromIndex < 0 ||
+          fromIndex >= base.length ||
+          toIndex < 0 ||
+          toIndex >= base.length ||
+          fromIndex === toIndex
+        ) {
+          return prev;
+        }
+
+        const updated = [...base];
+        const [moved] = updated.splice(fromIndex, 1);
+        updated.splice(toIndex, 0, moved);
+        customQueueRef.current = updated;
+        return updated;
+      });
+    },
+    [currentTrack, tracks, isShuffled, shuffleQueue, repeatMode]
+  );
+
+  const removeFromQueue = useCallback(
+    (index: number) => {
+      setCustomQueue((prev) => {
+        const base =
+          prev ??
+          getUpcomingQueue({
+            currentTrack,
+            tracks,
+            isShuffled,
+            shuffleQueue,
+            repeatMode,
+          });
+
+        if (index < 0 || index >= base.length) {
+          return prev;
+        }
+
+        const updated = [...base];
+        updated.splice(index, 1);
+        customQueueRef.current = updated;
+        return updated;
+      });
+    },
+    [currentTrack, tracks, isShuffled, shuffleQueue, repeatMode]
+  );
+
+  const queue = useMemo(() => {
+    if (customQueue !== null) {
+      return customQueue;
+    }
+    return getUpcomingQueue({
+      currentTrack,
+      tracks,
+      isShuffled,
+      shuffleQueue,
+      repeatMode,
+    });
+  }, [customQueue, currentTrack, tracks, isShuffled, shuffleQueue, repeatMode]);
+
   return (
     <AudioContext.Provider
       value={{
         currentTrack,
         tracks,
+        queue,
         isPlaying,
         currentTime,
         duration,
@@ -435,6 +622,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         shuffleAll,
         toggleShuffle,
         toggleRepeat,
+        reorderQueue,
+        removeFromQueue,
       }}
     >
       {children}

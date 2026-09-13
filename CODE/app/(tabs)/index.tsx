@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
 import { s } from '../../styles/bootstrap';
 import { useAudio } from '../../context/AudioContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Track } from '../../types/track';
 
 export function formatDuration(seconds?: number): string {
@@ -25,6 +26,7 @@ export function formatDuration(seconds?: number): string {
 
 export default function LibraryPage() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const {
     playTrack,
     currentTrack,
@@ -50,19 +52,27 @@ export default function LibraryPage() {
     setRefreshing(false);
   }, [refreshTracks]);
 
+  const openPlayer = () => {
+    if (typeof (router as any).navigate === 'function') {
+      (router as any).navigate('/player');
+    } else {
+      router.push('/player');
+    }
+  };
+
   const handleTrackPress = (track: Track) => {
     playTrack(track);
-    router.push('/player');
+    openPlayer();
   };
 
   const handlePlayAll = async () => {
     await playAll();
-    router.push('/player');
+    openPlayer();
   };
 
   const handleShuffleAll = async () => {
     await shuffleAll();
-    router.push('/player');
+    openPlayer();
   };
 
   const handleDelete = (track: Track) => {
@@ -177,9 +187,9 @@ export default function LibraryPage() {
   };
 
   return (
-    <View style={[styles.container, s.flex1, s.bgDark, s.px3]}>
+    <View style={[styles.container, s.flex1, s.bgDark, s.px3, { paddingTop: Math.max(insets.top, 16) }]}>
       {/* Header */}
-      <View style={[styles.header, s.flexRow, s.alignItemsCenter, s.py3]}>
+      <View style={[styles.header, s.flexRow, s.alignItemsCenter]}>
         <Ionicons name="musical-notes" size={28} color="#ffffff" style={styles.headerIcon} />
         <Text style={[styles.headerTitle, s.textWhite]}>Your Library</Text>
       </View>
@@ -277,8 +287,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingTop: 8,
+    paddingBottom: 20,
   },
   headerIcon: { marginRight: 12 },
   headerTitle: {

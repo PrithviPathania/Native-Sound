@@ -52,6 +52,14 @@ const staticStyles = StyleSheet.create({
   mt2: { marginTop: 8 },
   mt3: { marginTop: 16 },
   mt4: { marginTop: 24 },
+  mr1: { marginRight: 4 },
+  mr2: { marginRight: 8 },
+  mr3: { marginRight: 16 },
+  mr4: { marginRight: 24 },
+  ml1: { marginLeft: 4 },
+  ml2: { marginLeft: 8 },
+  ml3: { marginLeft: 16 },
+  ml4: { marginLeft: 24 },
 
   // Border Radius
   rounded: { borderRadius: Radii.standard },         // 8px

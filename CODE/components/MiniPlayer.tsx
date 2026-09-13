@@ -34,7 +34,13 @@ export default function MiniPlayer() {
       <TouchableOpacity
         style={[styles.infoArea, s.flex1, s.flexRow, s.alignItemsCenter]}
         activeOpacity={0.8}
-        onPress={() => router.push('/player')}
+        onPress={() => {
+          if (typeof (router as any).navigate === 'function') {
+            (router as any).navigate('/player');
+          } else {
+            router.push('/player');
+          }
+        }}
       >
         {/* 40x40 Thumbnail with rounded-2 */}
         <View style={[styles.thumbnail, s.rounded, s.alignItemsCenter, s.justifyContentCenter]}>

@@ -2,10 +2,11 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, ActivityIndicator, Image } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/theme';
+import { Colors, Radii } from '../../constants/theme';
 import { s } from '../../styles/bootstrap';
 import { getLikedTracks } from '../../services/database';
 import { useAudio } from '../../context/AudioContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Track } from '../../types/track';
 
 export function formatDuration(seconds?: number): string {
@@ -17,6 +18,7 @@ export function formatDuration(seconds?: number): string {
 
 export default function LikedSongsPage() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { playTrack, currentTrack, isPlaying, toggleLike } = useAudio();
 
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -41,9 +43,27 @@ export default function LikedSongsPage() {
     }, [])
   );
 
+  const openPlayer = () => {
+    if (typeof (router as any).navigate === 'function') {
+      (router as any).navigate('/player');
+    } else {
+      router.push('/player');
+    }
+  };
+
+  const handleBackToLibrary = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else if (typeof (router as any).navigate === 'function') {
+      (router as any).navigate('/(tabs)/');
+    } else {
+      router.replace('/(tabs)/');
+    }
+  };
+
   const handleTrackPress = (track: Track) => {
     playTrack(track);
-    router.push('/player');
+    openPlayer();
   };
 
   const handleUnlike = async (track: Track) => {
@@ -98,20 +118,22 @@ export default function LikedSongsPage() {
   };
 
   return (
-    <View style={[styles.container, s.flex1, s.bgDark, s.px3]}>
-      {/* Back button */}
+    <View style={[styles.container, s.flex1, s.bgDark, s.px3, { paddingTop: Math.max(insets.top, 16) }]}>
+      {/* Back to Library CTA Box */}
       <TouchableOpacity
-        style={[styles.backButton, s.flexRow, s.alignItemsCenter, s.py2]}
+        style={[styles.libraryCard, s.flexRow, s.alignItemsCenter]}
         activeOpacity={0.7}
-        onPress={() => router.back()}
+        onPress={handleBackToLibrary}
+        accessibilityLabel="Back to Library"
       >
-        <Ionicons name="chevron-back" size={20} color={Colors.primary} style={styles.backArrow} />
-        <Text style={[styles.backText, s.textPrimary]}>Library</Text>
+        <View style={[styles.libraryIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter]}>
+          <Ionicons name="chevron-back" size={16} color="#ffffff" />
+        </View>
+        <Text style={[styles.libraryCardTitle, s.textWhite]}>Library</Text>
       </TouchableOpacity>
 
       {/* Page header with danger color heart */}
-      <View style={[styles.header, s.flexRow, s.alignItemsCenter, s.py3]}>
-        <Ionicons name="heart" size={28} color={Colors.danger} style={styles.heartBig} />
+      <View style={[styles.header, s.flexRow, s.alignItemsCenter]}>
         <Text style={[styles.pageTitle, s.textWhite]}>Liked Songs</Text>
       </View>
 
@@ -147,13 +169,30 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.background,
   },
-  backButton: {
-    minHeight: 44,
+  libraryCard: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radii.standard,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 4,
+    marginBottom: 12,
   },
-  backArrow: { marginRight: 4 },
-  backText: { fontSize: 16, fontFamily: 'Inter', color: Colors.primary },
+  libraryIconContainer: {
+    width: 28,
+    height: 28,
+    backgroundColor: 'rgba(13, 110, 253, 0.15)',
+    marginRight: 8,
+  },
+  libraryCardTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Bold',
+    fontWeight: '600',
+  },
   header: {
-    paddingTop: 8,
+    paddingTop: 4,
     paddingBottom: 16,
   },
   heartBig: { marginRight: 12 },

@@ -6,20 +6,13 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        headerShown: false,
         tabBarStyle: { display: 'none' },
-        headerStyle: {
-          backgroundColor: Colors.background,
-        },
-        headerTintColor: Colors.textPrimary,
-        headerTitleStyle: {
-          fontFamily: 'Inter-Bold',
-          fontWeight: '700',
-        },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Library' }} />
-      <Tabs.Screen name="import" options={{ title: 'Import' }} />
-      <Tabs.Screen name="liked" options={{ title: 'Liked Songs' }} />
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="import" />
+      <Tabs.Screen name="liked" />
     </Tabs>
   );
 }

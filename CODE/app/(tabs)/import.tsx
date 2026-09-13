@@ -5,10 +5,22 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radii } from '../../constants/theme';
 import { s } from '../../styles/bootstrap';
 import { importAudioFiles } from '../../services/fileImporter';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ImportPage() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [importing, setImporting] = useState(false);
+
+  const handleBackToLibrary = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else if (typeof (router as any).navigate === 'function') {
+      (router as any).navigate('/(tabs)/');
+    } else {
+      router.replace('/(tabs)/');
+    }
+  };
 
   const handleBrowse = async () => {
     if (importing) return;
@@ -37,19 +49,22 @@ export default function ImportPage() {
   };
 
   return (
-    <View style={[styles.container, s.flex1, s.bgDark, s.px3]}>
-      {/* Back button — Bootstrap btn-link style */}
+    <View style={[styles.container, s.flex1, s.bgDark, s.px3, { paddingTop: Math.max(insets.top, 16) }]}>
+      {/* Back to Library CTA Box */}
       <TouchableOpacity
-        style={[styles.backButton, s.flexRow, s.alignItemsCenter, s.py2]}
+        style={[styles.libraryCard, s.flexRow, s.alignItemsCenter]}
         activeOpacity={0.7}
-        onPress={() => router.back()}
+        onPress={handleBackToLibrary}
+        accessibilityLabel="Back to Library"
       >
-        <Ionicons name="chevron-back" size={20} color={Colors.primary} style={styles.backArrow} />
-        <Text style={[styles.backText, s.textPrimary]}>Library</Text>
+        <View style={[styles.libraryIconContainer, s.roundedCircle, s.alignItemsCenter, s.justifyContentCenter]}>
+          <Ionicons name="chevron-back" size={16} color="#ffffff" />
+        </View>
+        <Text style={[styles.libraryCardTitle, s.textWhite]}>Library</Text>
       </TouchableOpacity>
 
       {/* Page header */}
-      <Text style={[styles.pageTitle, s.textWhite, s.mt2, s.mb1]}>Import Music</Text>
+      <Text style={[styles.pageTitle, s.textWhite, s.mt1, s.mb1]}>Import Music</Text>
       <Text style={[styles.pageSubtitle, s.textSecondary, s.mb4]}>
         Add audio files from your device storage
       </Text>
@@ -108,20 +123,28 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
 
-  backButton: {
-    minHeight: 44,
+  libraryCard: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radii.standard,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 4,
+    marginBottom: 12,
   },
-
-  backArrow: {
-    marginRight: 4,
+  libraryIconContainer: {
+    width: 28,
+    height: 28,
+    backgroundColor: 'rgba(13, 110, 253, 0.15)',
+    marginRight: 8,
   },
-
-  backText: {
-    fontSize: 16,
-    fontFamily: 'Inter',
-    color: Colors.primary,
+  libraryCardTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Bold',
+    fontWeight: '600',
   },
-
   pageTitle: {
     fontSize: 28,
     fontFamily: 'Inter-Bold',

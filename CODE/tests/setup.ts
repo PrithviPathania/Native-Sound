@@ -193,8 +193,17 @@ export function setMockPathname(path: string) {
   currentPath = path;
 }
 
+export const mockRouter = {
+  push: vi.fn(),
+  back: vi.fn(),
+  navigate: vi.fn(),
+  replace: vi.fn(),
+  dismiss: vi.fn(),
+  canGoBack: vi.fn(() => true),
+};
+
 vi.mock('expo-router', () => ({
-  useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+  useRouter: () => mockRouter,
   usePathname: () => currentPath,
   useFocusEffect: (cb: () => void) => {
     React.useEffect(() => { cb(); }, [cb]);
@@ -224,4 +233,11 @@ vi.mock('expo-document-picker', () => ({
 
 vi.mock('../styles/bootstrap', () => ({
   s: new Proxy({}, { get: () => ({}) }),
+}));
+
+// ── Fake Safe Area Context ───────────────────────────────────────────
+vi.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 44, bottom: 34, left: 0, right: 0 }),
+  SafeAreaProvider: ({ children }: any) => children,
+  SafeAreaView: ({ children, style }: any) => React.createElement('div', { style }, children),
 }));

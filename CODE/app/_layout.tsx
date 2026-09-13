@@ -46,9 +46,10 @@ export default function RootLayout() {
           <Stack.Screen
             name="player"
             options={{
-              presentation: 'modal',
+              presentation: 'transparentModal',
               headerShown: false,
               animation: 'slide_from_bottom',
+              contentStyle: { backgroundColor: 'transparent' },
             }}
           />
         </Stack>
