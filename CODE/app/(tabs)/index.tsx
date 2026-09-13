@@ -196,11 +196,19 @@ export default function LibraryPage() {
           accessibilityLabel={isLiked ? 'Unlike track' : 'Like track'}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons
-            name={isLiked ? 'heart' : 'heart-outline'}
-            size={20}
-            color={isLiked ? colors.danger : colors.textMuted}
-          />
+          {isCustom && isLiked ? (
+            <Image
+              source={require('../../assets/heart-icon.png')}
+              style={styles.customHeartIconSmall}
+              resizeMode="contain"
+            />
+          ) : (
+            <Ionicons
+              name={isLiked ? 'heart' : 'heart-outline'}
+              size={20}
+              color={isLiked ? colors.danger : colors.textMuted}
+            />
+          )}
         </TouchableOpacity>
 
         {/* Trash CTA trailing */}
@@ -780,5 +788,9 @@ const styles = StyleSheet.create({
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  customHeartIconSmall: {
+    width: 20,
+    height: 22,
   },
 });

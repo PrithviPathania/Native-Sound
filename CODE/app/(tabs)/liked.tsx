@@ -167,7 +167,15 @@ export default function LikedSongsPage() {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel={`Unlike ${item.title}`}
         >
-          <Ionicons name="heart" size={20} color={colors.danger} />
+          {isCustom ? (
+            <Image
+              source={require('../../assets/heart-icon.png')}
+              style={styles.customHeartIconSmall}
+              resizeMode="contain"
+            />
+          ) : (
+            <Ionicons name="heart" size={20} color={colors.danger} />
+          )}
         </TouchableOpacity>
       </TouchableOpacity>
     );
@@ -409,5 +417,9 @@ const styles = StyleSheet.create({
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  customHeartIconSmall: {
+    width: 20,
+    height: 22,
   },
 });

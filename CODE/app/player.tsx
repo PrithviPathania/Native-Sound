@@ -434,7 +434,7 @@ function QueueItemRow({
 // ---------------------------------------------------------------------------
 export default function PlayerScreen() {
   const router = useRouter();
-  const { colors, fonts, isBW } = useTheme();
+  const { colors, fonts, isBW, isCustom } = useTheme();
   const {
     currentTrack,
     queue,
@@ -761,11 +761,19 @@ export default function PlayerScreen() {
               disabled={!currentTrack}
               accessibilityLabel={isLiked ? 'Unlike track' : 'Like track'}
             >
-              <Ionicons
-                name={isLiked ? 'heart' : 'heart-outline'}
-                size={20}
-                color={isLiked ? colors.danger : '#ffffff'}
-              />
+              {isCustom && isLiked ? (
+                <Image
+                  source={require('../assets/heart-icon.png')}
+                  style={styles.customHeartIconSmall}
+                  resizeMode="contain"
+                />
+              ) : (
+                <Ionicons
+                  name={isLiked ? 'heart' : 'heart-outline'}
+                  size={20}
+                  color={isLiked ? colors.danger : '#ffffff'}
+                />
+              )}
             </TouchableOpacity>
           </View>
 
@@ -968,11 +976,19 @@ export default function PlayerScreen() {
             disabled={!currentTrack}
             accessibilityLabel={isLiked ? 'Unlike track' : 'Like track'}
           >
-            <Ionicons
-              name={isLiked ? 'heart' : 'heart-outline'}
-              size={22}
-              color={isLiked ? colors.danger : '#ffffff'}
-            />
+            {isCustom && isLiked ? (
+              <Image
+                source={require('../assets/heart-icon.png')}
+                style={styles.customHeartIconPlayer}
+                resizeMode="contain"
+              />
+            ) : (
+              <Ionicons
+                name={isLiked ? 'heart' : 'heart-outline'}
+                size={22}
+                color={isLiked ? colors.danger : '#ffffff'}
+              />
+            )}
           </TouchableOpacity>
 
           {/* Repeat button with '1' badge when repeatMode === 'one' */}
@@ -1306,5 +1322,13 @@ const styles = StyleSheet.create({
   },
   volumeRow: {
     gap: 12,
+  },
+  customHeartIconSmall: {
+    width: 20,
+    height: 22,
+  },
+  customHeartIconPlayer: {
+    width: 24,
+    height: 27,
   },
 });
